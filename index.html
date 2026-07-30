@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🔮 AI 정밀 관상 & 연예인 관상 매칭</title>
+  
+  <!-- PWA 웹 앱 설정 -->
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AI 관상">
+  
+  <!-- PWA Manifest Data URI -->
+  <link rel="manifest" href="data:application/manifest+json;utf8,{
+    %22name%22:%22AI%20%EC%A0%95%EB%B0%80%20%EA%B4%80%EC%83%81%20%EB%A6%AC%ED%8F%AC%ED%8A%B8%22,
+    %22short_name%22:%22AI%EA%B4%80%EC%83%81%22,
+    %22start_url%22:%22.%22,
+    %22display%22:%22standalone%22,
+    %22background_color%22:%22%230f172a%22,
+    %22theme_color%22:%22%230f172a%22,
+    %22icons%22:[{%22src%22:%22https://cdn-icons-png.flaticon.com/512/3665/3665922.png%22,%22sizes%22:%22512x512%22,%22type%22:%22image/png%22}]
+  }">
+
+  <!-- face-api.js CDN -->
+  <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: 'Pretendard', -apple-system, sans-serif;
+      background-color: #0f172a;
+      color: #f8fafc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 15px;
+    }
+    .container {
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 20px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+      max-width: 500px;
+      width: 100%;
+      text-align: center;
+    }
+    h1 { font-size: 1.5rem; margin-bottom: 6px; color: #facc15; }
+    p.desc { font-size: 0.82rem; color: #94a3b8; margin-bottom: 12px; }
+    
+    .status-msg {
+      background: #334155;
+      color: #f1f5f9;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      margin-bottom: 12px;
+      font-weight: bold;
+      transition: all 0.3s;
+    }
+
+    .video-wrapper {
+      position: relative;
+      width: 100%;
+      height: 320px;
+      background: #000;
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 15px;
+      border: 2px solid #334155;
+    }
+    video, canvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+
+    button {
+      background: linear-gradient(135deg, #6366f1, #a855f7);
+      color: white;
+      border: none;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 10px;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.2s;
+    }
+    button:disabled { background: #475569; opacity: 0.6; }
+
+    .result-card {
+      margin-top: 15px;
+      background: #0f172a;
+      padding: 18px;
+      border-radius: 14px;
+      text-align: left;
+      display: none;
+      border: 1px solid #334155;
+    }
+    .result-card h3 { color: #facc15; margin-bottom: 12px; font-size: 1.1rem; text-align: center; border-bottom: 1px solid #334155; padding-bottom: 8px; }
+    
+    .profile-bar {
+      display: flex;
+      justify-content: space-around;
+      background: linear-gradient(135deg, #1e1b4b, #31104b);
+      padding: 10px;
+      border-radius: 10px;
+      margin-bottom: 12px;
+      border: 1px solid #6366f1;
+    }
+    .profile-item { text-align: center; }
+    .profile-item .label { font-size: 0.7rem; color: #c084fc; display: block; }
+    .profile-item .val { font-size: 0.95rem; font-weight: bold; color: #ffffff; }
+
+    .celeb-card {
+      background: linear-gradient(135deg, #065f46, #047857);
+      padding: 14px;
+      border-radius: 10px;
+      margin-bottom: 14px;
+      border: 1px solid #10b981;
+    }
+    .celeb-card .title { font-size: 0.7rem; color: #a7f3d0; text-transform: uppercase; }
+    .celeb-card .name { font-size: 1.2rem; font-weight: bold; color: #ffffff; margin: 2px 0; }
+    .celeb-card .feature { font-size: 0.8rem; color: #fef08a; margin-bottom: 4px; font-weight: bold; }
+    .celeb-card .desc { font-size: 0.8rem; color: #ecfdf5; line-height: 1.4; }
+
+    .ratios {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 15px;
+      background: #1e293b;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+    }
+    .ratios div { text-align: center; }
+    .ratios span { display: block; font-weight: bold; font-size: 1rem; color: #38bdf8; margin-top: 2px; }
+
+    .detail-section {
+      background: #1e293b;
+      padding: 12px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      border-left: 4px solid #6366f1;
+    }
+    .detail-section h4 { color: #facc15; font-size: 0.9rem; margin-bottom: 4px; display: flex; justify-content: space-between; }
+    .detail-section h4 .badge { background: #334155; color: #38bdf8; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; }
+    .detail-section .sub-tag { color: #a7f3d0; font-size: 0.78rem; margin-bottom: 6px; display: block; font-weight: bold; }
+    .detail-section p { font-size: 0.8rem; line-height: 1.5; color: #e2e8f0; }
+
+    .summary-box {
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      border: 1px dashed #6366f1;
+      padding: 12px;
+      border-radius: 10px;
+      margin-top: 12px;
+    }
+    .summary-box h5 { color: #c084fc; font-size: 0.85rem; margin-bottom: 4px; }
+    .summary-box p { font-size: 0.8rem; color: #cbd5e1; line-height: 1.4; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🔮 AI 정밀 관상</h1>
+  <p class="desc">카메라 정면을 바라보고 스캔 버튼을 누르세요</p>
+
+  <div id="status" class="status-msg">AI 모델 로딩 중...</div>
+
+  <div class="video-wrapper">
+    <video id="webcam" autoplay playsinline muted></video>
+    <canvas id="output_canvas"></canvas>
+  </div>
+
+  <button id="btn-capture" disabled>카메라 권한 대기 중...</button>
+
+  <div id="result" class="result-card">
+    <h3>📊 AI 관상 심층 리포트</h3>
+
+    <div class="profile-bar">
+      <div class="profile-item">
+        <span class="label">성별</span>
+        <span class="val" id="res-gender">-</span>
+      </div>
+      <div class="profile-item">
+        <span class="label">추정 나이</span>
+        <span class="val" id="res-age">-</span>
+      </div>
+      <div class="profile-item">
+        <span class="label">관상 격국</span>
+        <span class="val" id="res-main-type" style="color: #facc15;">-</span>
+      </div>
+    </div>
+
+    <div class="celeb-card">
+      <div class="title">✨ 관상 비율 닮은 연예인</div>
+      <div class="name" id="celeb-name">-</div>
+      <div class="feature" id="celeb-feature">-</div>
+      <div class="desc" id="celeb-desc">-</div>
+    </div>
+    
+    <div class="ratios">
+      <div>상정 (초년) <span id="r-top">-</span></div>
+      <div>중정 (중년) <span id="r-mid">-</span></div>
+      <div>하정 (말년) <span id="r-bot">-</span></div>
+    </div>
+
+    <div class="detail-section" style="border-left-color: #38bdf8;">
+      <h4>🌱 초년운 <span class="badge" id="badge-top">-</span></h4>
+      <span class="sub-tag" id="key-top"></span>
+      <p id="desc-top"></p>
+    </div>
+
+    <div class="detail-section" style="border-left-color: #f59e0b;">
+      <h4>🔥 중년운 <span class="badge" id="badge-mid">-</span></h4>
+      <span class="sub-tag" id="key-mid"></span>
+      <p id="desc-mid"></p>
+    </div>
+
+    <div class="detail-section" style="border-left-color: #10b981;">
+      <h4>🛡️ 말년운 <span class="badge" id="badge-bot">-</span></h4>
+      <span class="sub-tag" id="key-bot"></span>
+      <p id="desc-bot"></p>
+    </div>
+
+    <div class="summary-box">
+      <h5>💡 핵심 처세 전략</h5>
+      <p id="summary-text"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const video = document.getElementById("webcam");
+  const canvas = document.getElementById("output_canvas");
+  const ctx = canvas.getContext("2d");
+  const btnCapture = document.getElementById("btn-capture");
+  const statusMsg = document.getElementById("status");
+  const resultCard = document.getElementById("result");
+
+  let isScanning = false;
+
+  const celebDB = {
+    male: {
+      top: [{ name: "RM (BTS)", feature: "시원한 이마선과 지적인 눈매", desc: "기획력과 아이디어가 뛰어난 통찰형 관상입니다." }],
+      mid: [{ name: "이정재", feature: "또렷한 코 라인과 리더십", desc: "중년기 결단력과 추진력으로 성취를 이뤄내는 관상입니다." }],
+      bot: [{ name: "마동석", feature: "두터운 하관과 포용력", desc: "나이가 들수록 인복과 수입이 늘어나는 대기만성형입니다." }]
+    },
+    female: {
+      top: [{ name: "김태희", feature: "단정한 이마와 명석한 분위기", desc: "초년 운세가 좋고 학습 및 연구 분야에서 결실을 맺습니다." }],
+      mid: [{ name: "김혜수", feature: "당당한 인상과 신뢰감", desc: "자기 주도적인 능력으로 사회적 명예를 축적합니다." }],
+      bot: [{ name: "송혜교", feature: "안정적인 하관과 유연함", desc: "인생 후반부로 갈수록 여유로움과 안정을 누리는 상입니다." }]
+    }
+  };
+
+  async function init() {
+    try {
+      const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
+      statusMsg.innerText = "⏳ AI 모델 로딩 중...";
+
+      await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+      await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+      await faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL);
+
+      statusMsg.innerText = "✅ 준비 완료! 정면을 바라보고 스캔하세요.";
+      statusMsg.style.background = "#15803d";
+
+      // 모바일 카메라 전면(facingMode: user) 우선 연결
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+      video.srcObject = stream;
+
+      video.onloadedmetadata = () => {
+        btnCapture.disabled = false;
+        btnCapture.innerText = "AI 정밀 관상 스캔 📸";
+      };
+    } catch (err) {
+      console.error(err);
+      statusMsg.innerText = "❌ 카메라 연결 실패 (HTTPS 접속 필요)";
+      statusMsg.style.background = "#b91c1c";
+    }
+  }
+
+  async function startScan() {
+    if (isScanning) return;
+    isScanning = true;
+    btnCapture.disabled = true;
+    resultCard.style.display = "none";
+    statusMsg.innerText = "🔍 분석 중...";
+
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+
+    try {
+      const detections = await faceapi.detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.5 }))
+                                      .withFaceLandmarks()
+                                      .withAgeAndGender();
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      if (detections) {
+        isScanning = false;
+        btnCapture.disabled = false;
+        btnCapture.innerText = "다시 스캔하기 📸";
+        statusMsg.innerText = "✅ 스캔 완료!";
+        statusMsg.style.background = "#15803d";
+        analyzeDetailed(detections);
+      } else {
+        isScanning = false;
+        btnCapture.disabled = false;
+        statusMsg.innerText = "⚠️ 얼굴을 인식하지 못했습니다. 다시 시도해주세요.";
+        statusMsg.style.background = "#b91c1c";
+      }
+    } catch (e) {
+      console.error(e);
+      isScanning = false;
+      btnCapture.disabled = false;
+    }
+  }
+
+  function analyzeDetailed(detections) {
+    const isMale = detections.gender === "male";
+    const age = Math.round(detections.age);
+    document.getElementById("res-gender").innerText = isMale ? "남성 ♂️" : "여성 ♀️";
+    document.getElementById("res-age").innerText = `약 ${age}세`;
+
+    const positions = detections.landmarks.positions;
+    const chinY = positions[8].y;         
+    const noseBottomY = positions[33].y;   
+    const eyebrowY = (positions[21].y + positions[22].y) / 2;
+    const eyeCenterY = (positions[37].y + positions[44].y) / 2;
+
+    const eyeToEyebrow = Math.max(5, eyebrowY - eyeCenterY);
+    const midNoseHeight = noseBottomY - eyebrowY;
+    const estimatedForeheadY = Math.max(0, eyebrowY - (midNoseHeight * 1.08 + eyeToEyebrow * 0.5));
+
+    const topLen = Math.max(1, eyebrowY - estimatedForeheadY);
+    const midLen = Math.max(1, noseBottomY - eyebrowY);
+    const botLen = Math.max(1, chinY - noseBottomY);
+    const totalLen = topLen + midLen + botLen;
+
+    const topPct = Math.round((topLen / totalLen) * 100);
+    const midPct = Math.round((midLen / totalLen) * 100);
+    const botPct = 100 - topPct - midPct;
+
+    document.getElementById("r-top").innerText = `${topPct}%`;
+    document.getElementById("r-mid").innerText = `${midPct}%`;
+    document.getElementById("r-bot").innerText = `${botPct}%`;
+
+    let mainType = "조화 균형격";
+    if (topPct >= midPct && topPct >= botPct) mainType = "상정 통찰격";
+    else if (midPct >= topPct && midPct >= botPct) mainType = "중정 성취격";
+    else mainType = "하정 만복격";
+
+    document.getElementById("res-main-type").innerText = mainType;
+
+    const genderKey = isMale ? "male" : "female";
+    let matchedCeleb = celebDB[genderKey].top[0];
+    if (midPct >= topPct && midPct >= botPct) matchedCeleb = celebDB[genderKey].mid[0];
+    if (botPct >= topPct && botPct >= midPct) matchedCeleb = celebDB[genderKey].bot[0];
+
+    document.getElementById("celeb-name").innerText = matchedCeleb.name;
+    document.getElementById("celeb-feature").innerText = matchedCeleb.feature;
+    document.getElementById("celeb-desc").innerText = matchedCeleb.desc;
+
+    // 운세 텍스트 업데이트
+    document.getElementById("badge-top").innerText = topPct >= 34 ? "우수" : "보통";
+    document.getElementById("key-top").innerText = "🔑 기획력, 지혜, 초년 기반";
+    document.getElementById("desc-top").innerText = "이마 선과 상정의 비율이 잘 정돈되어 지적 영역에서 강점을 발휘합니다.";
+
+    document.getElementById("badge-mid").innerText = midPct >= 35 ? "우수" : "보통";
+    document.getElementById("key-mid").innerText = "🔑 리더십, 재물, 사회적 기세";
+    document.getElementById("desc-mid").innerText = "중정 영역이 탄탄하여 30~50대에 강력한 성취를 이루는 구조입니다.";
+
+    document.getElementById("badge-bot").innerText = botPct >= 33 ? "우수" : "보통";
+    document.getElementById("key-bot").innerText = "🔑 포용력, 말년 자산, 인복";
+    document.getElementById("desc-bot").innerText = "하관이 받쳐주어 인생 후반부로 갈수록 환경이 안정됩니다.";
+
+    document.getElementById("summary-text").innerText = `'${mainType}' 기질이 두드러집니다. 본인의 주된 강점 영역에 집중할 때 성과가 극대화됩니다.`;
+
+    resultCard.style.display = "block";
+  }
+
+  btnCapture.addEventListener("click", startScan);
+  window.addEventListener("load", init);
+</script>
+
+</body>
+</html>
