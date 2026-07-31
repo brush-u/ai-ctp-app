@@ -798,8 +798,25 @@
     if (!captureContainer) return;
     
     statusMsg.innerText = "⏳ 캡처 및 이미지 저장 중...";
+    
+    let tempSnapshot = null;
     try {
-      // 🌟 [수정 완료] 저장 시 캔버스에 점/선이 확실하게 렌더링되어 있도록 보장
+      // 🌟 [수정 완료] 비디오 화면이 캡처에서 누락되지 않도록 현재 비디오 프레임을 정지 이미지로 복제 변환
+      if (currentMode !== 'upload' && video && video.videoWidth > 0) {
+        const snapCanvas = document.createElement('canvas');
+        snapCanvas.width = video.videoWidth;
+        snapCanvas.height = video.videoHeight;
+        const snapCtx = snapCanvas.getContext('2d');
+        snapCtx.drawImage(video, 0, snapCanvas.width, snapCanvas.height);
+        
+        tempSnapshot = document.createElement('img');
+        tempSnapshot.src = snapCanvas.toDataURL('image/png');
+        tempSnapshot.style.cssText = "position:absolute; top:0; left:0; width:100%; height:auto; z-index:0; object-fit:fill;";
+        video.parentElement.insertBefore(tempSnapshot, video);
+        video.style.display = "none";
+      }
+
+      // 🌟 [수정 완료] 점/선 캔버스 렌더링 명시적 갱신
       if (lastAnalyzedLandmarks) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         faceapi.draw.drawFaceLandmarks(canvas, lastAnalyzedLandmarks, {
@@ -808,7 +825,6 @@
         });
       }
 
-      // html2canvas로 컨테이너 전체 캡처
       const canvasResult = await html2canvas(captureContainer, { backgroundColor: '#0f172a', scale: 2, useCORS: true });
       const imageURL = canvasResult.toDataURL('image/png');
       const link = document.createElement('a');
@@ -818,22 +834,33 @@
       link.click(); 
       document.body.removeChild(link);
 
-      // 🌟 [수정 완료] 저장 직후 비디오나 이미지가 사라지지 않도록 상태 유지 및 복구 보장
+      // 🌟 [수정 완료] 저장 직후 복제 스냅샷 제거 및 비디오 스트림 정상 복구 (검은 화면 방지)
+      if (tempSnapshot) {
+        tempSnapshot.remove();
+      }
+
       if (currentMode === 'upload' && uploadedImageObj) {
         imgPreview.style.display = "block";
         video.style.display = "none";
       } else {
         video.style.display = "block";
         imgPreview.style.display = "none";
-        if (video.paused) {
-          video.play().catch(err => console.log("비디오 복구 재생 오류:", err));
+        if (mediaStream) {
+          video.srcObject = mediaStream;
         }
+        video.play().catch(err => console.log("비디오 복구 재생 오류:", err));
       }
 
       statusMsg.innerText = "✅ 기기 사진 앱/다운로드 폴더에 저장되었습니다!";
       statusMsg.style.background = "#15803d";
     } catch (e) {
       console.error(e);
+      if (tempSnapshot) tempSnapshot.remove();
+      if (currentMode !== 'upload') {
+        video.style.display = "block";
+        if (mediaStream) video.srcObject = mediaStream;
+        video.play().catch(() => {});
+      }
       alert("이미지 저장 중 오류가 발생했습니다.");
     }
   }
