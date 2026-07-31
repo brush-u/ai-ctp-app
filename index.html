@@ -135,9 +135,9 @@
       object-fit: cover;
     }
 
-    video { z-index: 1; }
-    img.uploaded-img { z-index: 1; display: none; }
-    canvas { pointer-events: none; z-index: 2; }
+    video { z-index: 1; display: block; }
+    img.uploaded-img { z-index: 2; display: none; }
+    canvas { pointer-events: none; z-index: 3; }
 
     .scan-overlay {
       position: absolute;
@@ -429,7 +429,7 @@
   let mediaStream = null;
   let uploadedImageObj = null;
   let lastAnalyzedLandmarks = null;
-  let frozenSnapshotUrl = null; // 캡처 시 비디오 화면 고정용
+  let frozenSnapshotUrl = null; 
 
   const CELEB_DB = {
     male: {
@@ -467,17 +467,6 @@
     resultCard.style.display = "none";
     lastAnalyzedLandmarks = null;
     adjustTip.style.display = "none";
-
-    // 스냅샷 해제 및 비디오 복구
-    if (frozenSnapshotUrl) {
-      frozenSnapshotUrl = null;
-      imgPreview.style.display = "none";
-      if (currentMode !== 'upload') video.style.display = "block";
-    }
-
-    if (currentMode !== 'upload' && video && video.paused) {
-      video.play().catch(err => console.log("비디오 재생 오류:", err));
-    }
   }
 
   function resetStatus(msg = "💡 스캔 준비 완료! 버튼을 클릭해 스캔하세요.") {
@@ -521,6 +510,11 @@
 
     const guideHead = document.getElementById("guide-head");
     const guideList = document.getElementById("guide-list");
+
+    // 모드 전환 시 이전 스냅샷 상태 완전 초기화
+    if (frozenSnapshotUrl) {
+      frozenSnapshotUrl = null;
+    }
 
     if (mode === 'upload') {
       stopCamera();
@@ -592,7 +586,11 @@
 
   function showAdjustGuide(msg = "카메라 정중앙에 얼굴을 맞추고 이마와 턱 끝이 잘 나오도록 조절해 주세요.") {
     scanOverlay.classList.remove("active");
-    if (currentMode !== 'upload' && video.paused) video.play();
+    if (currentMode !== 'upload') {
+      imgPreview.style.display = "none";
+      video.style.display = "block";
+      if (video.paused) video.play().catch(e => {});
+    }
     statusMsg.innerText = "⚠️ 분석 실패. 가이드에 맞춰 위치를 조정해주세요.";
     statusMsg.style.background = "#991b1b";
     adjustTipText.innerText = msg;
@@ -620,7 +618,7 @@
 
     const targetEl = currentMode === 'upload' ? imgPreview : video;
     
-    // 만약 카메라 모드라면 현재 화면을 스냅샷으로 떠서 고정 (결과 화면에서 얼굴이 나오도록 함)
+    // 🌟 카메라 모드일 경우 현재 화면을 스냅샷으로 떠서 이미지 요소에 고정 (얼굴이 계속 남아있게 함)
     if (currentMode !== 'upload' && video.videoWidth > 0) {
       const snapCanvas = document.createElement('canvas');
       snapCanvas.width = video.videoWidth;
@@ -659,25 +657,19 @@
             const rightDist = Math.abs(pos[16].x - pos[30].x); 
             const ratio = Math.max(leftDist, rightDist) / Math.min(leftDist, rightDist);
             if (ratio < 2.0) {
-              if (frozenSnapshotUrl) {
-                frozenSnapshotUrl = null;
-                imgPreview.style.display = "none";
-                video.style.display = "block";
-              }
               showAdjustGuide("⚠️ 정면 얼굴이 감지되었습니다! 귀와 턱선이 뚜렷하게 보이도록 고개를 옆으로 완전히 돌려주세요.");
               return; 
             }
           }
-
-          if (currentMode !== 'upload' && !video.paused) video.pause();
           
           lastAnalyzedLandmarks = resized;
           
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-          // 🌟 점선 굵기/톤 완전 일치 (동일한 얇고 선명한 스타일 적용)
+          
+          // 🌟 [핵심 수정] 점선과 박스 두께를 정면/업로드 모두 얇고 깔끔하게 완벽 동기화 (lineWidth: 1)
           faceapi.draw.drawFaceLandmarks(canvas, resized, {
-            pointColor: { color: '#38bdf8', lineWidth: 1.2 },
-            boxColor: { color: '#facc15', lineWidth: 1.5 }
+            pointColor: { color: '#38bdf8', lineWidth: 1 },
+            boxColor: { color: '#facc15', lineWidth: 1 }
           });
 
           if (currentMode === 'ear') generateSideReport(resized);
@@ -686,21 +678,11 @@
           statusMsg.innerText = "✅ 정밀 관상 분석이 완료되었습니다!";
           statusMsg.style.background = "#15803d";
         } else {
-          if (frozenSnapshotUrl) {
-            frozenSnapshotUrl = null;
-            imgPreview.style.display = "none";
-            video.style.display = "block";
-          }
           showAdjustGuide();
         }
       } catch (e) {
         console.error(e);
         scanOverlay.classList.remove("active");
-        if (frozenSnapshotUrl) {
-          frozenSnapshotUrl = null;
-          imgPreview.style.display = "none";
-          video.style.display = "block";
-        }
         showAdjustGuide();
       }
     }, 2000);
@@ -840,8 +822,8 @@
       if (lastAnalyzedLandmarks) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         faceapi.draw.drawFaceLandmarks(canvas, lastAnalyzedLandmarks, {
-          pointColor: { color: '#38bdf8', lineWidth: 1.2 },
-          boxColor: { color: '#facc15', lineWidth: 1.5 }
+          pointColor: { color: '#38bdf8', lineWidth: 1 },
+          boxColor: { color: '#facc15', lineWidth: 1 }
         });
       }
 
@@ -859,6 +841,26 @@
     } catch (e) {
       console.error(e);
       alert("이미지 저장 중 오류가 발생했습니다.");
+    } finally {
+      // 🌟 [핵심 수정] 저장 완료 후 카메라 영역 블랙아웃 방지 및 원상 복구
+      if (currentMode !== 'upload') {
+        if (frozenSnapshotUrl) {
+          imgPreview.src = frozenSnapshotUrl;
+          imgPreview.style.display = "block";
+          video.style.display = "none";
+        } else {
+          imgPreview.style.display = "none";
+          video.style.display = "block";
+          if (video.paused && mediaStream) {
+            video.play().catch(e => {});
+          }
+        }
+      } else {
+        if (uploadedImageObj) {
+          imgPreview.style.display = "block";
+          video.style.display = "none";
+        }
+      }
     }
   }
 
