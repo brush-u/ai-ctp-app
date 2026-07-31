@@ -520,7 +520,11 @@
     if (mode === 'upload') {
       stopCamera();
       video.style.display = "none";
-      imgPreview.style.display = uploadedImageObj ? "block" : "none";
+      if (uploadedImageObj) {
+        imgPreview.style.display = "block";
+      } else {
+        imgPreview.style.display = "none";
+      }
       document.getElementById("mode-desc").innerText = "앨범에서 분석할 고화질 사진을 선택해 주세요";
       btnAction.innerText = uploadedImageObj ? "🔍 업로드 사진 정밀 분석하기" : "📁 사진 선택하기";
       
@@ -648,9 +652,10 @@
           lastAnalyzedLandmarks = resized;
           
           ctx.clearRect(0, 0, canvas.width, canvas.height);
+          // 🌟 [수정 완료] 실시간 및 업로드 분석 모두 동일한 슬림하고 깔끔한 톤으로 완벽 일치
           faceapi.draw.drawFaceLandmarks(canvas, resized, {
-            pointColor: { color: '#38bdf8', lineWidth: 3 },
-            boxColor: { color: '#facc15', lineWidth: 2 }
+            pointColor: { color: '#38bdf8', lineWidth: 1.2 },
+            boxColor: { color: '#facc15', lineWidth: 1.5 }
           });
 
           if (currentMode === 'ear') generateSideReport(resized);
@@ -801,27 +806,29 @@
     
     let tempSnapshot = null;
     try {
-      // 🌟 [수정 완료] 비디오 화면이 캡처에서 누락되지 않도록 현재 비디오 프레임을 정지 이미지로 복제 변환
-      if (currentMode !== 'upload' && video && video.videoWidth > 0) {
+      const targetEl = (currentMode === 'upload' && uploadedImageObj) ? imgPreview : video;
+      
+      if (currentMode !== 'upload' && targetEl && targetEl.videoWidth > 0) {
         const snapCanvas = document.createElement('canvas');
-        snapCanvas.width = video.videoWidth;
-        snapCanvas.height = video.videoHeight;
+        snapCanvas.width = targetEl.videoWidth;
+        snapCanvas.height = targetEl.videoHeight;
         const snapCtx = snapCanvas.getContext('2d');
-        snapCtx.drawImage(video, 0, snapCanvas.width, snapCanvas.height);
+        snapCtx.drawImage(targetEl, 0, 0, snapCanvas.width, snapCanvas.height);
         
         tempSnapshot = document.createElement('img');
         tempSnapshot.src = snapCanvas.toDataURL('image/png');
         tempSnapshot.style.cssText = "position:absolute; top:0; left:0; width:100%; height:auto; z-index:0; object-fit:fill;";
         video.parentElement.insertBefore(tempSnapshot, video);
         video.style.display = "none";
+      } else if (currentMode === 'upload' && uploadedImageObj) {
+        imgPreview.style.display = "block";
       }
 
-      // 🌟 [수정 완료] 점/선 캔버스 렌더링 명시적 갱신
       if (lastAnalyzedLandmarks) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         faceapi.draw.drawFaceLandmarks(canvas, lastAnalyzedLandmarks, {
-          pointColor: { color: '#38bdf8', lineWidth: 3 },
-          boxColor: { color: '#facc15', lineWidth: 2 }
+          pointColor: { color: '#38bdf8', lineWidth: 1.2 },
+          boxColor: { color: '#facc15', lineWidth: 1.5 }
         });
       }
 
@@ -834,7 +841,6 @@
       link.click(); 
       document.body.removeChild(link);
 
-      // 🌟 [수정 완료] 저장 직후 복제 스냅샷 제거 및 비디오 스트림 정상 복구 (검은 화면 방지)
       if (tempSnapshot) {
         tempSnapshot.remove();
       }
@@ -847,6 +853,7 @@
         imgPreview.style.display = "none";
         if (mediaStream) {
           video.srcObject = mediaStream;
+          video.load();
         }
         video.play().catch(err => console.log("비디오 복구 재생 오류:", err));
       }
@@ -858,7 +865,10 @@
       if (tempSnapshot) tempSnapshot.remove();
       if (currentMode !== 'upload') {
         video.style.display = "block";
-        if (mediaStream) video.srcObject = mediaStream;
+        if (mediaStream) {
+          video.srcObject = mediaStream;
+          video.load();
+        }
         video.play().catch(() => {});
       }
       alert("이미지 저장 중 오류가 발생했습니다.");
