@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>AI 정밀 관상</title>
+  <title>AI 정밀 관상 & 사진 분석</title>
   
   <meta name="theme-color" content="#0f172a">
   <meta name="mobile-web-app-capable" content="yes">
@@ -11,9 +11,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="AI관상">
 
-  <!-- 🌟 완벽하게 렌더링되는 고품질 SVG 심볼 아이콘 적용 (문자 A 표시 오류 방지) -->
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230f172a'/%3E%3Ccircle cx='50' cy='50' r='38' fill='%231e1b4b' stroke='%23facc15' stroke-width='3' stroke-dasharray='6 3'/%3E%3Cpath d='M 20 50 Q 50 20 80 50 Q 50 80 20 50 Z' fill='%230f172a' stroke='%2338bdf8' stroke-width='4'/%3E%3Ccircle cx='50' cy='50' r='12' fill='%23facc15'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230f172a'/%3E%3Ccircle cx='52' cy='48' r='2' fill='%23ffffff'/%3E%3C/svg%3E">
-  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230f172a'/%3E%3Ccircle cx='50' cy='50' r='38' fill='%231e1b4b' stroke='%23facc15' stroke-width='3' stroke-dasharray='6 3'/%3E%3Cpath d='M 20 50 Q 50 20 80 50 Q 50 80 20 50 Z' fill='%230f172a' stroke='%2338bdf8' stroke-width='4'/%3E%3Ccircle cx='50' cy='50' r='12' fill='%23facc15'/%3E%3Ccircle cx='50' cy='50' r='6' fill='%230f172a'/%3E%3Ccircle cx='52' cy='48' r='2' fill='%23ffffff'/%3E%3C/svg%3E">
+  <!-- 🌟 아이콘 'A' 문자 깨짐 현상을 해결하기 위한 안정적인 표준 이미지 링크 적용 -->
+  <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
 
   <!-- face-api.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
@@ -163,7 +163,7 @@
       top: 0; left: 0; width: 100%; height: 4px;
       background: linear-gradient(90deg, transparent, #ef4444, #facc15, #ef4444, transparent);
       box-shadow: 0 0 15px #ef4444, 0 0 25px #facc15;
-      animation: scan-move 1.5s linear infinite;
+      animation: scan-move 2s linear infinite;
     }
     @keyframes scan-move {
       0% { top: 0%; }
@@ -340,7 +340,7 @@
       <circle cx="50" cy="50" r="6" fill="#0f172a"/>
       <circle cx="52" cy="48" r="2" fill="#ffffff"/>
     </svg>
-    <h1>AI 정밀 관상</h1>
+    <h1>AI 정밀 관상 & 사진 분석</h1>
   </div>
   <p class="desc" id="mode-desc">원하시는 모드를 선택해 주세요</p>
 
@@ -378,10 +378,10 @@
   <input type="file" id="file-input" accept="image/*" style="display: none;">
 
   <div id="action-area">
-    <button id="btn-action" class="main-btn" onclick="handleActionClick()">📸 정면 관상 스캔하기</button>
+    <button id="btn-action" class="main-btn" onclick="handleActionClick()">📸 정면 관상 정밀 스캔하기</button>
   </div>
 
-  <!-- 📸 상세 분석 결과 카드 -->
+  <!-- 📸 정밀 분석 결과 카드 -->
   <div id="result" class="result-card">
     <h3 id="result-main-title">📊 정밀 관상 분석 리포트</h3>
 
@@ -607,7 +607,7 @@
   async function runAnalysis() {
     scanOverlay.classList.add("active");
     adjustTip.style.display = "none";
-    statusMsg.innerText = "⏳ AI관상 정밀 스캔 중... (이목구비 좌표 측정)";
+    statusMsg.innerText = "⏳ AI관상 정밀 스캔 중... (이목구비 68개 좌표 심층 측정)";
     statusMsg.style.background = "#334155";
     resultCard.style.display = "none";
 
@@ -620,9 +620,10 @@
     canvas.width = displaySize.width;
     canvas.height = displaySize.height;
 
+    // 🌟 스캔 속도를 3초로 늦추어 충분한 심층 분석 및 정밀 랜드마크 측정 보장
     setTimeout(async () => {
       try {
-        const detections = await faceapi.detectSingleFace(targetEl, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.2 }))
+        const detections = await faceapi.detectSingleFace(targetEl, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.15 }))
                                         .withFaceLandmarks()
                                         .withAgeAndGender();
 
@@ -637,7 +638,12 @@
           lastAnalyzedLandmarks = resized;
           
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-          faceapi.draw.drawFaceLandmarks(canvas, resized);
+          
+          // 🌟 정밀한 랜드마크 포인트 및 연결선(메시) 그리기 옵션 커스텀
+          faceapi.draw.drawFaceLandmarks(canvas, resized, {
+            pointColor: { color: '#38bdf8', lineWidth: 2 },
+            boxColor: { color: '#facc15', lineWidth: 1 }
+          });
 
           if (currentMode === 'ear') {
             generateSideReport(resized);
@@ -655,7 +661,7 @@
         scanOverlay.classList.remove("active");
         showAdjustGuide();
       }
-    }, 1500);
+    }, 3000);
   }
 
   function showAdjustGuide() {
@@ -806,7 +812,10 @@
     try {
       if (lastAnalyzedLandmarks) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        faceapi.draw.drawFaceLandmarks(canvas, lastAnalyzedLandmarks);
+        faceapi.draw.drawFaceLandmarks(canvas, lastAnalyzedLandmarks, {
+          pointColor: { color: '#38bdf8', lineWidth: 2 },
+          boxColor: { color: '#facc15', lineWidth: 1 }
+        });
       }
 
       const canvasResult = await html2canvas(captureContainer, {
