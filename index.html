@@ -3,17 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>AI 정밀 관상</title>
+  <title>AI 정밀 관상 & 사진 분석</title>
   
   <meta name="theme-color" content="#0f172a">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="AI관상">
-
-  <!-- 아이콘 깨짐 방지 표준 링크 -->
   <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
-  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
 
   <!-- face-api.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
@@ -147,7 +140,6 @@
       width: 100%; height: 100%;
       pointer-events: none;
       z-index: 2;
-      background: transparent !important;
     }
 
     .scan-overlay {
@@ -340,7 +332,7 @@
       <circle cx="50" cy="50" r="6" fill="#0f172a"/>
       <circle cx="52" cy="48" r="2" fill="#ffffff"/>
     </svg>
-    <h1>AI 정밀 관상</h1>
+    <h1>AI 정밀 관상 & 사진 분석</h1>
   </div>
   <p class="desc" id="mode-desc">원하시는 모드를 선택해 주세요</p>
 
@@ -381,7 +373,6 @@
     <button id="btn-action" class="main-btn" onclick="handleActionClick()">📸 정면 관상 정밀 스캔하기</button>
   </div>
 
-  <!-- 📸 정밀 분석 결과 카드 -->
   <div id="result" class="result-card">
     <h3 id="result-main-title">📊 정밀 관상 분석 리포트</h3>
 
@@ -445,51 +436,49 @@
   const CELEB_DB = {
     male: {
       top: [
-        { name: "송중기", reason: "이마가 넓고 반듯하며 눈매가 맑아 학업 및 지혜를 상징하는 상정(上庭) 비율이 매우 유사함" },
-        { name: "박보검", reason: "눈썹과 눈 사이의 간격이 여유롭고 온화한 인상을 주어 대인관계가 좋은 목형(木形) 기운" },
-        { name: "임시완", reason: "이목구비의 대칭도가 완벽하고 지적이며 섬세한 통찰력이 돋보이는 기하학적 형태" },
-        { name: "차은우", reason: "상·중·하정의 비율이 균등하며 눈매와 콧대가 귀티와 신뢰감을 주는 상" }
+        { name: "송중기", reason: "관록궁(이마)이 넓고 반듯하며 눈매가 맑아 학업 및 지혜를 상징하는 상정(上庭) 비율이 매우 유사함" },
+        { name: "차은우", reason: "상·중·하정의 삼정(三庭) 비율이 균등하며 맑은 안광(눈빛)이 귀티와 신뢰감을 줌" }
       ],
       mid: [
-        { name: "이정재", reason: "콧대가 힘 있게 뻗어 있고 중정(中庭)의 재백궁이 재물과 사업적 결단력을 나타냄" },
-        { name: "현빈", reason: "하악(턱선)과 코의 입체감이 뚜렷하여 책임감이 강하고 중년기 성취운이 높은 형상" },
-        { name: "정우성", reason: "전체적인 얼굴 윤곽이 시원하고 대범하며 눈빛에서 오는 카리스마가 일치함" },
-        { name: "공유", reason: "눈꼬리와 입술 선이 부드럽게 조화되어 신뢰감과 친근감을 동시에 주는 관상" }
+        { name: "이정재", reason: "재백궁(코)에 힘이 실려 있고 광대뼈(관골)가 발달하여 중년의 권력과 재물을 거머쥐는 관상" },
+        { name: "현빈", reason: "산근(미간 아래)부터 코끝까지 융기되어 있어 강한 책임감과 재물 창출 능력이 돋보임" }
       ],
       bot: [
-        { name: "마동석", reason: "하정(하단 턱)이 묵직하고 단단하여 말년의 인복과 의리, 뚝심이 강하게 작용함" },
-        { name: "조진웅", reason: "인중과 턱의 비율이 묵직하여 주변 사람들을 포용하고 이끄는 리더십이 돋보임" },
-        { name: "최민식", reason: "눈빛의 깊이와 하단 골격의 밀도가 높아 오랜 경험에서 우러나오는 통찰력이 닮음" }
+        { name: "마동석", reason: "노복궁(턱과 하관)이 묵직하고 단단하여 말년의 수많은 인복과 의리, 강한 통솔력을 지님" },
+        { name: "조진웅", reason: "지각(턱 끝)이 두툼하고 포용력이 넘쳐 아랫사람을 잘 이끌고 말년운이 풍파 없이 안정됨" }
       ]
     },
     female: {
       top: [
-        { name: "아이유", reason: "이마와 눈의 비율이 밝고 총명하며 직관적인 아이디어와 인기를 모으는 관상" },
-        { name: "태연", reason: "눈매의 윤곽이 또렷하고 초년운과 지혜를 상징하는 상정 부위의 기운이 활발함" },
-        { name: "김태희", reason: "이목구비의 정밀 대칭 비율이 우수하며 지성과 미가 조화로운 전형적인 명석한 상" }
+        { name: "아이유", reason: "명궁(미간)이 맑고 넓어 사고력이 뛰어나며, 직관적 아이디어로 대중의 인기를 끄는 상" },
+        { name: "김태희", reason: "오악(얼굴의 다섯 산)이 뚜렷하고 이마의 기운이 좋아 전형적인 총명함과 귀함을 갖춤" }
       ],
       mid: [
-        { name: "전지현", reason: "코와 광대 주변의 입체적 볼륨감이 재물복과 독보적인 아웃라잇 기운을 형성함" },
-        { name: "손예진", reason: "눈망울이 깊고 감정선이 부드러워 주변 사람들에게 강한 호감과 신뢰를 주는 상" },
-        { name: "김혜수", reason: "중정의 카리스마와 코의 반듯한 기세가 리더십과 독립적인 성취욕을 보여줌" }
+        { name: "전지현", reason: "현담비(쓸개를 매달아 놓은 듯한 코) 형태를 띠어 재물이 마르지 않고 융성하는 최고의 재물운" },
+        { name: "김혜수", reason: "중정의 카리스마와 관골(광대)의 기세가 리더십과 독립적인 성취욕을 강하게 뿜어냄" }
       ],
       bot: [
-        { name: "김고은", reason: "하정의 턱선이 부드럽고 친근하여 말년으로 갈수록 따뜻한 인복이 따르는 상" },
-        { name: "라미란", reason: "입술과 하관의 기운이 활달하여 어디서나 사람들을 웃게 만드는 복이 있음" },
-        { name: "윤여정", reason: "연륜이 느껴지는 눈빛의 깊이와 통찰력이 대쪽 같은 지혜를 나타냄" }
+        { name: "김고은", reason: "하관과 입술 선이 부드러워 대인관계의 충돌이 적고 말년으로 갈수록 덕을 쌓는 상" },
+        { name: "윤여정", reason: "팔자주름(법령)이 뚜렷하고 턱선이 굳건하여 연륜에서 묻어나는 통찰력과 장수, 명예운이 닮음" }
       ]
     }
   };
 
-  function resetStatus(msg = "💡 스캔 준비 완료! 버튼을 클릭해 스캔하세요.") {
+  // 🌟 [수정 2] 캔버스 및 상태 완전 초기화 함수
+  function clearAllData() {
+    ctx.clearRect(0, 0, 9999, 9999); // 화면 크기 변경 대비 초과 크기로 완전 클리어
+    resultCard.style.display = "none";
+    lastAnalyzedLandmarks = null;
     adjustTip.style.display = "none";
+  }
+
+  function resetStatus(msg = "💡 스캔 준비 완료! 버튼을 클릭해 스캔하세요.") {
     if (isModelLoaded) {
       statusMsg.innerText = msg;
       statusMsg.style.background = "#334155";
     }
   }
 
-  // 🌟 [수정 2] 재스캔 시 이전 이미지 잔류 문제 해결을 위한 초기화 반영
   fileInput.addEventListener('change', function(event) {
     const file = event.target.files[0];
     if (file) {
@@ -501,9 +490,7 @@
           imgPreview.src = e.target.result;
           imgPreview.style.display = "block";
           video.style.display = "none";
-          resultCard.style.display = "none";
-          lastAnalyzedLandmarks = null;
-          ctx.clearRect(0, 0, canvas.width, canvas.height); // 잔상 제거
+          clearAllData(); // 잔상 제거
           resetStatus("✅ 사진 선택 완료! 분석 버튼을 누르세요.");
           btnAction.innerText = "🔍 업로드 사진 정밀 분석하기";
         };
@@ -516,14 +503,13 @@
   function switchMode(mode) {
     if (currentMode === mode) return;
     currentMode = mode;
+    
     document.getElementById("tab-front").classList.toggle("active", mode === 'front');
     document.getElementById("tab-ear").classList.toggle("active", mode === 'ear');
     document.getElementById("tab-upload").classList.toggle("active", mode === 'upload');
 
-    // 모드 전환 시 이전 결과 및 캔버스 선 완전 초기화
-    resultCard.style.display = "none";
-    lastAnalyzedLandmarks = null;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // 🌟 [수정 2] 모드 전환 시 이전 잔상 완벽 제거
+    clearAllData();
     resetStatus();
 
     const guideHead = document.getElementById("guide-head");
@@ -532,11 +518,7 @@
     if (mode === 'upload') {
       stopCamera();
       video.style.display = "none";
-      if (!uploadedImageObj) {
-        imgPreview.style.display = "none";
-      } else {
-        imgPreview.style.display = "block";
-      }
+      imgPreview.style.display = uploadedImageObj ? "block" : "none";
       document.getElementById("mode-desc").innerText = "앨범에서 분석할 고화질 사진을 선택해 주세요";
       btnAction.innerText = uploadedImageObj ? "🔍 업로드 사진 정밀 분석하기" : "📁 사진 선택하기";
       
@@ -554,8 +536,8 @@
       
       guideHead.innerText = "📌 측면 및 귀(채청관) 촬영 가이드";
       guideList.innerHTML = `
-        <li><span class="good">[권장]</span> 귀 전체 윤곽과 턱 선이 명확하게 드러나도록 대각선/측면 조준</li>
-        <li><span class="bad">[주의]</span> 머리카락으로 귀를 가리거나 카메라에 너무 가까운 상태</li>
+        <li><span class="good">[권장]</span> 귀 전체 윤곽과 턱 선이 명확하게 드러나도록 고개를 90도 가까이 돌려주세요.</li>
+        <li><span class="bad">[주의]</span> 정면을 응시하면 분석이 불가능합니다. 머리카락으로 귀를 가리지 마세요.</li>
       `;
       startCamera();
     } else { 
@@ -577,12 +559,8 @@
   async function startCamera() {
     if (currentMode === 'upload') return;
     if (mediaStream) return;
-
     try {
-      mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user" },
-        audio: false
-      });
+      mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
       video.srcObject = mediaStream;
       await video.play();
     } catch (err) {
@@ -599,37 +577,37 @@
     video.srcObject = null;
   }
 
+  function showAdjustGuide(msg = "카메라 정중앙에 얼굴을 맞추고 이마와 턱 끝이 잘 나오도록 조절해 주세요.") {
+    scanOverlay.classList.remove("active");
+    if (currentMode !== 'upload' && video.paused) video.play();
+    statusMsg.innerText = "⚠️ 분석 실패. 가이드에 맞춰 위치를 조정해주세요.";
+    statusMsg.style.background = "#991b1b";
+    adjustTipText.innerText = msg;
+    adjustTip.style.display = "block";
+  }
+
   function handleActionClick() {
     if (currentMode === 'upload' && !uploadedImageObj) {
       fileInput.click();
       return;
     }
-
     if (!isModelLoaded) {
       alert("AI 인공지능 모델 다운로드 중입니다. 잠시만 기다려주세요.");
       return;
     }
-
     runAnalysis();
   }
 
   async function runAnalysis() {
-    // 🌟 [수정 2] 스캔 시작 전 이전 캔버스 선 및 결과 카드 확실하게 초기화
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    resultCard.style.display = "none";
-    lastAnalyzedLandmarks = null;
+    // 🌟 [수정 2] 스캔 시작 전 기존 데이터 무조건 리셋
+    clearAllData();
 
     scanOverlay.classList.add("active");
-    adjustTip.style.display = "none";
     statusMsg.innerText = "⏳ AI관상 정밀 스캔 중... (이목구비 68개 좌표 심층 측정)";
     statusMsg.style.background = "#334155";
 
     const targetEl = currentMode === 'upload' ? imgPreview : video;
-    const displaySize = {
-      width: targetEl.clientWidth || 320,
-      height: targetEl.clientHeight || 240
-    };
-
+    const displaySize = { width: targetEl.clientWidth || 320, height: targetEl.clientHeight || 240 };
     canvas.width = displaySize.width;
     canvas.height = displaySize.height;
 
@@ -642,37 +620,45 @@
         scanOverlay.classList.remove("active");
 
         if (detections) {
-          if (currentMode !== 'upload' && !video.paused) {
-            video.pause();
+          const resized = faceapi.resizeResults(detections, displaySize);
+          const pos = resized.landmarks.positions;
+
+          // 🌟 [수정 4] 측면 스캔 모드일 때 '정면 인식' 필터링 강화
+          if (currentMode === 'ear') {
+            const leftDist = Math.abs(pos[30].x - pos[0].x);  // 코 중앙(30)에서 왼쪽 얼굴선(0)
+            const rightDist = Math.abs(pos[16].x - pos[30].x); // 코 중앙(30)에서 오른쪽 얼굴선(16)
+            
+            // 비율이 1.0에 가까울수록 완벽한 정면. 2.0 미만이면 귀가 제대로 보이지 않는 상태로 간주
+            const ratio = Math.max(leftDist, rightDist) / Math.min(leftDist, rightDist);
+            if (ratio < 2.0) {
+              showAdjustGuide("⚠️ 정면 얼굴이 감지되었습니다! 귀와 턱선이 뚜렷하게 보이도록 고개를 옆으로 완전히 돌려주세요.");
+              return; // 분석 중단
+            }
           }
 
-          const resized = faceapi.resizeResults(detections, displaySize);
+          if (currentMode !== 'upload' && !video.paused) video.pause();
           
-          // 🌟 [수정 3] 턱선(하관) 랜드마크 위치가 너무 위로 잡히는 현상 보정 (실제 턱선 끝까지 하향 매칭)
-          if (resized && resized.landmarks && resized.landmarks.positions) {
-            let positions = resized.landmarks.positions;
-            // 턱선 끝단(8번 포인트 전후)의 Y좌표를 얼굴 전체 비율에 맞게 미세 하향 보정
-            if (positions[8]) {
-              const faceHeightFactor = Math.abs(positions[8].y - positions[27].y);
-              positions[8].y += faceHeightFactor * 0.08; 
-            }
+          // 🌟 [수정 3] 턱선(하관) 랜드마크 4번~12번 포인트를 물리적으로 밑으로 끌어내려 실제 턱 윤곽에 맞춤
+          const faceHeight = Math.abs(pos[8].y - pos[27].y);
+          const jawOffset = faceHeight * 0.08; // 전체 얼굴 높이의 약 8% 하향 조정
+          
+          for(let i = 4; i <= 12; i++) {
+            // 중앙(8번)이 가장 많이 내려가고 옆으로 갈수록 덜 내려가도록 가중치 계산
+            let weight = 1 - (Math.abs(8 - i) / 5); 
+            if(pos[i] && pos[i]._y !== undefined) pos[i]._y += (jawOffset * weight);
+            else if(pos[i] && pos[i].y !== undefined) pos[i].y += (jawOffset * weight);
           }
 
           lastAnalyzedLandmarks = resized;
           
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-          
-          // 랜드마크 및 턱선 격자 렌더링
           faceapi.draw.drawFaceLandmarks(canvas, resized, {
             pointColor: { color: '#38bdf8', lineWidth: 2 },
             boxColor: { color: '#facc15', lineWidth: 1 }
           });
 
-          if (currentMode === 'ear') {
-            generateSideReport(resized);
-          } else {
-            generateFrontReport(resized);
-          }
+          if (currentMode === 'ear') generateSideReport(resized);
+          else generateFrontReport(resized);
 
           statusMsg.innerText = "✅ 정밀 관상 분석이 완료되었습니다!";
           statusMsg.style.background = "#15803d";
@@ -684,21 +670,10 @@
         scanOverlay.classList.remove("active");
         showAdjustGuide();
       }
-    }, 3000);
+    }, 2500);
   }
 
-  function showAdjustGuide() {
-    scanOverlay.classList.remove("active");
-    if (currentMode !== 'upload' && video.paused) {
-      video.play();
-    }
-    statusMsg.innerText = "⚠️ 얼굴 스캔에 실패했습니다. 위치를 조정한 후 다시 시도해 주세요.";
-    statusMsg.style.background = "#991b1b";
-    adjustTipText.innerText = "카메라 정중앙에 얼굴을 맞추고 이마와 턱 끝이 잘 나오도록 조절해 주세요.";
-    adjustTip.style.display = "block";
-  }
-
-  // 🌟 [수정 1] 구체적이고 상세한 관상 분석 리포트 복구
+  // 🌟 [수정 1] 전문적인 관상학 용어를 기반으로 한 매우 상세한 정면 리포트
   function generateFrontReport(detections) {
     const isMale = detections.gender === "male";
     const age = Math.round(detections.age);
@@ -710,10 +685,7 @@
     document.getElementById("celeb-container").style.display = "block";
     document.getElementById("ratio-container").style.display = "flex";
 
-    const topY = pos[21].y; 
-    const midY = pos[33].y; 
-    const botY = pos[8].y;  
-
+    const topY = pos[21].y; const midY = pos[33].y; const botY = pos[8].y;  
     const topH = Math.max(10, topY - (midY - topY) * 0.85);
     const topLen = Math.abs(topY - topH);
     const midLen = Math.abs(midY - topY);
@@ -728,110 +700,102 @@
     document.getElementById("r-mid").innerText = `${mPct}%`;
     document.getElementById("r-bot").innerText = `${bPct}%`;
 
-    const noseWidth = Math.abs(pos[35].x - pos[31].x);
-    const faceWidth = Math.abs(pos[16].x - pos[0].x);
-    const noseRatio = noseWidth / faceWidth;
-
-    const lipWidth = Math.abs(pos[54].x - pos[48].x);
-    const lipRatio = lipWidth / faceWidth;
-
-    const eyeLeftWidth = Math.abs(pos[39].x - pos[36].x);
-    const eyeRatio = eyeLeftWidth / faceWidth;
+    const noseRatio = Math.abs(pos[35].x - pos[31].x) / Math.abs(pos[16].x - pos[0].x);
+    const lipRatio = Math.abs(pos[54].x - pos[48].x) / Math.abs(pos[16].x - pos[0].x);
 
     const genderKey = isMale ? 'male' : 'female';
     let pool = CELEB_DB[genderKey].mid;
-    let elementType = "토(土)형 - 포용력 및 신뢰형";
+    let elementType = "토(土)형 - 두터운 신의와 포용의 상";
 
     if (tPct >= mPct && tPct >= bPct) {
-      elementType = "목(木)형 - 직관 및 지능형";
+      elementType = "목(木)형 - 기획력과 두뇌 회전이 빠른 상";
       pool = CELEB_DB[genderKey].top;
     } else if (mPct >= tPct && mPct >= bPct) {
-      elementType = "금(金)형 - 결단 및 재물형";
+      elementType = "금(金)형 - 강한 결단력과 재물 성취의 상";
       pool = CELEB_DB[genderKey].mid;
     } else {
-      elementType = "수(水)형 - 유연 및 덕망형";
+      elementType = "수(水)형 - 유연한 대처와 만인에게 사랑받는 상";
       pool = CELEB_DB[genderKey].bot;
     }
 
     const matchedCeleb = pool[Math.floor(Math.random() * pool.length)];
-    const syncRate = Math.floor(Math.random() * 7 + 91);
-
     document.getElementById("res-element").innerText = elementType;
-    document.getElementById("res-celeb").innerText = `${matchedCeleb.name} (싱크로율 ${syncRate}%)`;
+    document.getElementById("res-celeb").innerText = `${matchedCeleb.name} (싱크로율 ${Math.floor(Math.random() * 7 + 91)}%)`;
     document.getElementById("res-celeb-reason").innerText = `💡 [매칭 근거] ${matchedCeleb.reason}`;
 
     const detailsDiv = document.getElementById("details-container");
     detailsDiv.innerHTML = `
       <div class="detail-section" style="border-left-color: #38bdf8;">
-        <div class="detail-header"><h4>🌱 상정 (이마 & 눈) - 지혜 / 초년운</h4></div>
-        <div class="shape-desc">📐 [세부 특징] ${eyeRatio > 0.12 ? "지혜와 통찰이 담긴 봉황 눈매" : "집중력과 신중함이 돋보이는 수호의 눈"}</div>
-        <div class="original-data">💡 [측정 데이터] 이마 상단과 눈썹 사이의 각도가 넓어 정보 수용력과 학습 능력이 평균 이상으로 활발합니다.</div>
+        <div class="detail-header"><h4>🌱 관록궁(상정) - 학문/명예/초년운</h4></div>
+        <div class="shape-desc">📐 [형태 분석] 명궁(미간)이 열려있고 이마의 윤곽이 반듯한 형상</div>
+        <div class="original-data">💡 [측정 결과] 이마 윗선부터 눈썹까지의 면적이 얼굴 전체 비율 대비 안정적이며, 이는 정보 습득력과 선견지명이 우수함을 의미합니다. 새로운 지식을 빠르게 흡수하며 지적 호기심이 강합니다.</div>
         <div class="analysis-grid">
-          <div class="good-box"><strong>🟢 장점</strong>상황 판단력과 순발력, 기회 포착 안목이 탁월함</div>
-          <div class="bad-box"><strong>🔴 주의</strong>지나친 분석으로 인한 피로감과 냉정함 주의</div>
+          <div class="good-box"><strong>🟢 장점</strong>상황 파악이 빠르고 남들보다 앞서가는 기획력 및 총명함</div>
+          <div class="bad-box"><strong>🔴 주의</strong>지나치게 논리적으로 접근하여 타인의 감정을 놓칠 우려</div>
         </div>
       </div>
       <div class="detail-section" style="border-left-color: #f59e0b;">
-        <div class="detail-header"><h4>🔥 중정 (코 & 재백궁) - 재물 / 사업운</h4></div>
-        <div class="shape-desc">📐 [세부 특징] ${noseRatio > 0.23 ? "재물이 모이는 주머니형 실속 코" : "의지와 결단력이 돋보이는 반듯한 콧대"}</div>
-        <div class="original-data">💡 [측정 데이터] 콧대와 광대 중심부의 입체적인 볼륨감으로 보아 중년기 경제적 자립도와 성취욕이 매우 뚜렷합니다.</div>
+        <div class="detail-header"><h4>🔥 재백궁(중정) - 재물/사업/중년운</h4></div>
+        <div class="shape-desc">📐 [형태 분석] ${noseRatio > 0.22 ? "재물이 모이는 콧방울(난대/정위) 발달형" : "자존심과 추진력을 상징하는 뻗은 콧대"}</div>
+        <div class="original-data">💡 [측정 결과] 코와 관골(광대)의 입체 비율이 뚜렷하여 중년기에 사회적 지위나 금전적 보상을 쟁취하려는 에너지가 매우 강하게 나타납니다. 재물을 다루는 감각이 뛰어납니다.</div>
         <div class="analysis-grid">
-          <div class="good-box"><strong>🟢 장점</strong>재물이 쉽게 흩어지지 않고 안정적으로 축적됨</div>
-          <div class="bad-box"><strong>🔴 주의</strong>지나친 고집이나 금전적 완고함 경계 필요</div>
+          <div class="good-box"><strong>🟢 장점</strong>한번 들어온 재물을 잘 지켜내며 경제적 자립심이 굳건함</div>
+          <div class="bad-box"><strong>🔴 주의</strong>자신의 방식을 고수하려는 아집이나 금전적 완고함 경계</div>
         </div>
       </div>
       <div class="detail-section" style="border-left-color: #10b981;">
-        <div class="detail-header"><h4>🛡️ 하정 (입 & 턱) - 인복 / 말년운</h4></div>
-        <div class="shape-desc">📐 [세부 특징] ${lipRatio > 0.38 ? "포용력과 의리가 넘치는 대범한 입술" : "책임감이 강하고 단정한 하관"}</div>
-        <div class="original-data">💡 [측정 데이터] 하관과 입꼬리의 균형 비율상 대인관계의 폭이 넓고 말년으로 갈수록 주변에 사람이 따르는 형상입니다.</div>
+        <div class="detail-header"><h4>🛡️ 노복궁(하정) - 인복/주거/말년운</h4></div>
+        <div class="shape-desc">📐 [형태 분석] ${lipRatio > 0.35 ? "포용력이 돋보이는 두터운 입술과 하관" : "절제력과 책임감이 강한 단정한 턱선"}</div>
+        <div class="original-data">💡 [측정 결과] 입꼬리 주변(해각)부터 턱 끝(지각)으로 이어지는 라인이 묵직하여, 타인을 수용하는 그릇이 크고 말년으로 갈수록 주변에 사람이 모여드는 인복이 넘칩니다.</div>
         <div class="analysis-grid">
-          <div class="good-box"><strong>🟢 장점</strong>도량이 넓어 주변 사람들을 잘 이끌고 인복이 좋음</div>
-          <div class="bad-box"><strong>🔴 주의</strong>한 번 틀어진 관계에 대한 미련이나 구설수 조심</div>
+          <div class="good-box"><strong>🟢 장점</strong>후배나 아랫사람을 잘 품어주며 안정적인 기반을 구축함</div>
+          <div class="bad-box"><strong>🔴 주의</strong>가까운 사람에게 상처를 받았을 때 회복이 오래 걸림</div>
         </div>
       </div>
     `;
 
     document.getElementById("desc-summary").innerText = 
-      `타고난 장점(${elementType})을 적극 활용하되, 매사에 부드러운 미소와 경청의 태도를 유지하면 운이 복(福)으로 완벽하게 전환됩니다.`;
+      `당신은 ${elementType.split('-')[0]}의 타고난 기운을 지녔습니다. 본인의 뛰어난 직관력을 믿고 나아가되, 타인에게 부드러운 미소와 경청의 태도를 한 스푼 더한다면 평생 큰 풍파 없이 길운(吉運)이 따를 것입니다.`;
 
     resultCard.style.display = "block";
   }
 
+  // 🌟 [수정 1] 전문적인 관상학 용어를 기반으로 한 매우 상세한 측면 리포트
   function generateSideReport(detections) {
     const isMale = detections.gender === "male";
     const age = Math.round(detections.age);
 
-    document.getElementById("result-main-title").innerText = "📊 측면 & 귀 관상 리포트";
+    document.getElementById("result-main-title").innerText = "📊 측면(귀/턱선) 심층 관상 리포트";
     document.getElementById("res-gender").innerText = isMale ? "남성 ♂️" : "여성 ♀️";
     document.getElementById("res-age").innerText = `약 ${age}세`;
     
     document.getElementById("celeb-container").style.display = "none";
     document.getElementById("ratio-container").style.display = "none";
-    document.getElementById("res-element").innerText = "채청(採聽)격";
+    document.getElementById("res-element").innerText = "채청(採聽) - 정보 수용과 수명";
 
     const detailsDiv = document.getElementById("details-container");
     detailsDiv.innerHTML = `
       <div class="detail-section" style="border-left-color: #ec4899;">
-        <div class="detail-header"><h4>👂 귀(採聽官) - 정보수용 & 재물복</h4></div>
-        <div class="shape-desc">📐 [세부 특징] 귓볼이 도톰하고 윤곽이 선명한 안정형 귀</div>
-        <div class="original-data">💡 [측정 데이터] 외부의 조언을 수용하는 포용력이 높고 평생 귀인의 조력이 따르는 상입니다.</div>
+        <div class="detail-header"><h4>👂 채청관(귀) - 지혜수용 & 평생의 복록</h4></div>
+        <div class="shape-desc">📐 [형태 분석] 윤곽(귓바퀴)이 선명하고 귓불(수주)이 도톰하게 맺힌 상</div>
+        <div class="original-data">💡 [측정 결과] 귀는 관상학에서 지혜와 수명, 외부 정보를 수용하는 태도를 의미합니다. 측면 각도상 귀의 상단이 눈높이와 조화를 이루고 있어, 타인의 조언을 경청할 줄 알고 평생 귀인의 조력이 따릅니다.</div>
         <div class="analysis-grid">
-          <div class="good-box"><strong>🟢 장점</strong>귀가 밝아 위기 관리 능력이 우수함</div>
-          <div class="bad-box"><strong>🔴 주의</strong>귀가 얇아 주변 의견에 쉽게 흔들림 주의</div>
+          <div class="good-box"><strong>🟢 장점</strong>판단력이 뛰어나고 위기 상황에서 올바른 조언을 취사선택함</div>
+          <div class="bad-box"><strong>🔴 주의</strong>주변 평판에 너무 신경 쓰다가 본인의 주관이 흔들릴 수 있음</div>
         </div>
       </div>
       <div class="detail-section" style="border-left-color: #8b5cf6;">
-        <div class="detail-header"><h4>🗿 턱선 측면 라인 - 지구력 & 끈기</h4></div>
-        <div class="shape-desc">📐 [세부 특징] 목표를 향해 뚝심 있게 밀고 나가는 암석형 하악선</div>
-        <div class="original-data">💡 [측정 데이터] 턱 골격의 밀도가 견고하여 중·말년의 지구력과 사업적 성취를 강하게 뒷받침합니다.</div>
+        <div class="detail-header"><h4>🗿 측면 하악선(턱 골격) - 지구력 & 실천력</h4></div>
+        <div class="shape-desc">📐 [형태 분석] 귀 밑에서 턱 끝으로 이어지는 골격이 암석처럼 견고한 형태</div>
+        <div class="original-data">💡 [측정 결과] 하악 골격의 밀도가 단단하여 강인한 지구력과 투지를 보여줍니다. 목표를 세우면 중도에 포기하지 않고 끝까지 밀어붙이는 돌파력이 중년 이후의 엄청난 재물 성취를 뒷받침합니다.</div>
         <div class="analysis-grid">
-          <div class="good-box"><strong>🟢 장점</strong>한번 시작한 일은 끝까지 완수하는 집념</div>
-          <div class="bad-box"><strong>🔴 주의</strong>융통성이 부족해질 수 있으니 유연성 유지 필요</div>
+          <div class="good-box"><strong>🟢 장점</strong>한번 시작한 프로젝트나 관계에 대한 흔들림 없는 책임감과 집념</div>
+          <div class="bad-box"><strong>🔴 주의</strong>목적 달성에 몰두하여 융통성이 부족해지거나 대립이 생길 수 있음</div>
         </div>
       </div>
     `;
 
-    document.getElementById("desc-summary").innerText = "측면 턱선의 뚝심과 귀의 수용력을 겸비하고 있습니다. 소신을 지키되 타인의 의견에 유연하게 귀를 기울이면 복이 배가 됩니다.";
+    document.getElementById("desc-summary").innerText = "측면 턱선의 무서운 뚝심과, 이를 제어할 수 있는 귀의 유연한 수용력을 동시에 겸비하셨습니다. 당신의 강직한 소신을 지키되 타인의 조언을 유연하게 받아들이면 최고의 성취를 이룰 수 있습니다.";
     resultCard.style.display = "block";
   }
 
@@ -840,7 +804,6 @@
     if (!captureContainer) return;
     
     statusMsg.innerText = "⏳ 캡처 및 이미지 저장 중...";
-
     try {
       if (lastAnalyzedLandmarks) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -849,21 +812,11 @@
           boxColor: { color: '#facc15', lineWidth: 1 }
         });
       }
-
-      const canvasResult = await html2canvas(captureContainer, {
-        backgroundColor: '#0f172a',
-        scale: 2,
-        useCORS: true
-      });
-
+      const canvasResult = await html2canvas(captureContainer, { backgroundColor: '#0f172a', scale: 2, useCORS: true });
       const imageURL = canvasResult.toDataURL('image/png');
       const link = document.createElement('a');
-      link.href = imageURL;
-      link.download = 'AI관상_분석결과.png';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
+      link.href = imageURL; link.download = 'AI관상_분석결과.png';
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
       statusMsg.innerText = "✅ 기기 사진 앱/다운로드 폴더에 저장되었습니다!";
       statusMsg.style.background = "#15803d";
     } catch (e) {
@@ -873,25 +826,12 @@
   }
 
   async function shareResult() {
-    const shareData = {
-      title: 'AI관상 분석 리포트',
-      text: '나의 AI 관상 분석 결과와 매칭 연예인을 확인해보세요! 🔮',
-      url: window.location.href,
-    };
-
     if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-      } catch (err) {
-        console.log('공유 취소:', err);
-      }
+      try { await navigator.share({ title: 'AI관상 분석 리포트', text: '나의 AI 관상 분석 결과 확인하기 🔮', url: window.location.href }); } 
+      catch (err) { console.log('공유 취소:', err); }
     } else {
-      try {
-        await navigator.clipboard.writeText(window.location.href);
-        alert('관상 분석 링크가 클립보드에 복사되었습니다!');
-      } catch (err) {
-        alert('링크 복사에 실패했습니다.');
-      }
+      try { await navigator.clipboard.writeText(window.location.href); alert('링크가 복사되었습니다!'); } 
+      catch (err) { alert('복사에 실패했습니다.'); }
     }
   }
 
@@ -899,22 +839,16 @@
     try {
       const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
       statusMsg.innerText = "⏳ AI 관상 신경망 로딩 중...";
-
       await Promise.all([
         faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
         faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
         faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL)
       ]);
-
       isModelLoaded = true;
       statusMsg.innerText = "💡 준비 완료! 사진을 선택하거나 스캔 버튼을 누르세요.";
       statusMsg.style.background = "#334155";
-      
-      if (currentMode !== 'upload') {
-        startCamera();
-      }
+      if (currentMode !== 'upload') startCamera();
     } catch (e) {
-      console.error(e);
       statusMsg.innerText = "⚠️ 외부 AI 모델 연결 실패 (네트워크를 확인하세요)";
       statusMsg.style.background = "#b91c1c";
     }
