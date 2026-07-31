@@ -38,7 +38,7 @@
 
     .mode-selector {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       margin-bottom: 12px;
       background: #0f172a;
       padding: 4px;
@@ -47,8 +47,8 @@
     }
     .mode-btn {
       flex: 1;
-      padding: 8px;
-      font-size: 0.82rem;
+      padding: 8px 4px;
+      font-size: 0.78rem;
       background: transparent;
       color: #94a3b8;
       border-radius: 6px;
@@ -61,6 +61,38 @@
       color: #ffffff;
       font-weight: bold;
     }
+
+    /* 사진 업로드 가이드 박스 */
+    .guide-box {
+      background: #0f172a;
+      border: 1px dashed #6366f1;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+      text-align: left;
+      font-size: 0.75rem;
+    }
+    .guide-box .guide-title {
+      color: #facc15;
+      font-weight: bold;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .guide-box ul {
+      list-style: none;
+      padding-left: 0;
+      color: #cbd5e1;
+    }
+    .guide-box li {
+      margin-bottom: 2px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .guide-box .good { color: #4ade80; }
+    .guide-box .bad { color: #f87171; }
     
     .status-msg {
       background: #334155;
@@ -96,9 +128,12 @@
       overflow: hidden;
       margin-bottom: 15px;
       border: 2px solid #334155;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
-    video {
+    video, img.uploaded-img {
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
@@ -162,6 +197,11 @@
       100% { top: 0%; }
     }
 
+    .btn-group {
+      display: flex;
+      gap: 8px;
+    }
+
     .main-btn {
       background: linear-gradient(135deg, #6366f1, #a855f7);
       color: white;
@@ -175,6 +215,20 @@
       transition: all 0.2s;
     }
     .main-btn:disabled { background: #475569; opacity: 0.6; }
+
+    .upload-btn {
+      background: #334155;
+      color: #f1f5f9;
+      border: 1px solid #475569;
+      padding: 14px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      border-radius: 10px;
+      cursor: pointer;
+      width: 100%;
+      display: inline-block;
+      text-align: center;
+    }
 
     .result-card {
       margin-top: 15px;
@@ -275,18 +329,30 @@
 <body>
 
 <div class="container">
-  <h1>🔮 AI 정밀 관상 & 측면 스캔</h1>
+  <h1>🔮 AI 정밀 관상 & 사진 분석</h1>
   <p class="desc" id="mode-desc">정면을 바라보고 스캔 버튼을 누르세요</p>
 
   <div class="mode-selector">
-    <button class="mode-btn active" id="btn-mode-front" onclick="switchMode('front')">👤 정면 관상 모드</button>
-    <button class="mode-btn" id="btn-mode-ear" onclick="switchMode('ear')">👂 측면/귀 관상 모드</button>
+    <button class="mode-btn active" id="btn-mode-front" onclick="switchMode('front')">👤 정면 스캔</button>
+    <button class="mode-btn" id="btn-mode-ear" onclick="switchMode('ear')">👂 측면/귀 스캔</button>
+    <button class="mode-btn" id="btn-mode-upload" onclick="switchMode('upload')">📁 사진 업로드</button>
+  </div>
+
+  <!-- 권장 사진 상태 가이드 -->
+  <div class="guide-box">
+    <div class="guide-title">📌 정확한 분석을 위한 사진 가이드</div>
+    <ul>
+      <li><span class="good">✔</span> 이마, 눈썹, 코, 입, 턱선이 선명하게 나온 정면 사진</li>
+      <li><span class="good">✔</span> 조명이 밝고 그림자가 깊지 않은 밝은 상태</li>
+      <li><span class="bad">✘</span> 모자, 마스크, 선글라스, 과도한 보정 필터 제외</li>
+    </ul>
   </div>
 
   <div id="status" class="status-msg"><span>⏳ AI 모델 로딩 중...</span></div>
 
   <div class="video-wrapper">
     <video id="webcam" autoplay playsinline muted></video>
+    <img id="uploaded-preview" class="uploaded-img" style="display: none;" alt="미리보기">
     <canvas id="output_canvas"></canvas>
 
     <div id="scan-overlay" class="scan-overlay">
@@ -295,7 +361,12 @@
     </div>
   </div>
 
-  <button id="btn-capture" class="main-btn" disabled>카메라 권한 대기 중...</button>
+  <!-- 사진 업로드 인풋 (숨김) -->
+  <input type="file" id="file-input" accept="image/*" style="display: none;" onchange="handleFileUpload(event)">
+
+  <div id="action-area">
+    <button id="btn-capture" class="main-btn" disabled>카메라 권한 대기 중...</button>
+  </div>
 
   <div id="result" class="result-card">
     <h3 id="report-title">📊 AI 관상 심층 리포트</h3>
@@ -402,15 +473,18 @@
 
 <script>
   const video = document.getElementById("webcam");
+  const imgPreview = document.getElementById("uploaded-preview");
   const canvas = document.getElementById("output_canvas");
   const ctx = canvas.getContext("2d");
   const btnCapture = document.getElementById("btn-capture");
   const statusMsg = document.getElementById("status");
   const resultCard = document.getElementById("result");
   const scanOverlay = document.getElementById("scan-overlay");
+  const fileInput = document.getElementById("file-input");
 
   let isScanning = false;
   let currentMode = 'front';
+  let isImageUploaded = false;
 
   const celebDB = {
     male: {
@@ -455,19 +529,50 @@
 
     document.getElementById("btn-mode-front").classList.toggle("active", mode === 'front');
     document.getElementById("btn-mode-ear").classList.toggle("active", mode === 'ear');
+    document.getElementById("btn-mode-upload").classList.toggle("active", mode === 'upload');
 
     const descEl = document.getElementById("mode-desc");
-    if (mode === 'front') {
-      descEl.innerText = "카메라 정면을 바라보고 스캔 버튼을 누르세요";
-      btnCapture.innerText = "AI 정밀 관상 스캔 📸";
-    } else {
-      descEl.innerText = "고개를 약간 옆으로 돌려 귀가 보이도록 촬영하세요";
-      btnCapture.innerText = "👂 귀/측면 관상 스캔 📸";
-    }
-
     resultCard.style.display = "none";
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    try { video.play(); } catch(e){}
+
+    if (mode === 'upload') {
+      video.style.display = "none";
+      imgPreview.style.display = isImageUploaded ? "block" : "none";
+      descEl.innerText = "분석할 얼굴 사진을 파일로 선택해 주세요";
+      btnCapture.innerText = isImageUploaded ? "업로드한 사진 관상 분석 📸" : "사진 선택하기 📁";
+      btnCapture.disabled = false;
+    } else {
+      imgPreview.style.display = "none";
+      video.style.display = "block";
+      try { video.play(); } catch(e){}
+
+      if (mode === 'front') {
+        descEl.innerText = "카메라 정면을 바라보고 스캔 버튼을 누르세요";
+        btnCapture.innerText = "AI 정밀 관상 스캔 📸";
+      } else {
+        descEl.innerText = "고개를 약간 옆으로 돌려 귀가 보이도록 촬영하세요";
+        btnCapture.innerText = "👂 귀/측면 관상 스캔 📸";
+      }
+    }
+  }
+
+  function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        imgPreview.src = e.target.result;
+        imgPreview.style.display = "block";
+        video.style.display = "none";
+        isImageUploaded = true;
+
+        statusMsg.innerHTML = '<span>✅ 사진 로드 완료! 아래 버튼을 눌러 스캔을 시작하세요.</span>';
+        statusMsg.style.background = "#15803d";
+        btnCapture.innerText = "업로드한 사진 관상 분석 📸";
+        btnCapture.disabled = false;
+      };
+      reader.readAsDataURL(file);
+    }
   }
 
   async function init() {
@@ -479,7 +584,7 @@
       await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
       await faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL);
 
-      statusMsg.innerHTML = '<span>✅ 준비 완료! 스캔할 모드를 선택해 주세요.</span>';
+      statusMsg.innerHTML = '<span>✅ 준비 완료! 모드를 선택 후 진행해 주세요.</span>';
       statusMsg.style.background = "#15803d";
 
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -488,48 +593,53 @@
       video.srcObject = stream;
 
       video.onloadedmetadata = () => {
-        video.play();
-        btnCapture.disabled = false;
-        btnCapture.innerText = "AI 정밀 관상 스캔 📸";
+        if (currentMode !== 'upload') {
+          video.play();
+          btnCapture.disabled = false;
+          btnCapture.innerText = "AI 정밀 관상 스캔 📸";
+        }
       };
     } catch (err) {
       console.error(err);
-      statusMsg.innerHTML = '<span>❌ 카메라 연결 실패 (브라우저 권한을 확인해주세요)</span>';
+      statusMsg.innerHTML = '<span>⚠️ 카메라 연결 실패 (사진 업로드 모드를 이용하실 수 있습니다)</span>';
       statusMsg.style.background = "#b91c1c";
+      switchMode('upload');
     }
   }
 
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
   async function startScan() {
+    if (currentMode === 'upload' && !isImageUploaded) {
+      fileInput.click();
+      return;
+    }
+
     if (isScanning) return;
     isScanning = true;
     btnCapture.disabled = true;
     resultCard.style.display = "none";
 
-    // 스캔 시작 시 라이브 비디오 재개 및 캔버스 초기화
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    try { await video.play(); } catch(e){}
-
     scanOverlay.classList.add("active");
     statusMsg.style.background = "#334155";
 
-    const displaySize = { width: video.clientWidth || 320, height: video.clientHeight || 240 };
+    const targetElement = currentMode === 'upload' ? imgPreview : video;
+    const displaySize = { 
+      width: targetElement.clientWidth || 320, 
+      height: targetElement.clientHeight || 240 
+    };
     canvas.width = displaySize.width;
     canvas.height = displaySize.height;
 
-    statusMsg.innerHTML = currentMode === 'front' 
-      ? '<span class="spinner">⏳</span> <span>[1/4] 정면 이목구비 랜드마크 포인팅 중...</span>'
-      : '<span class="spinner">⏳</span> <span>[1/4] 측면 윤곽 및 귀 위치 검색 중...</span>';
+    statusMsg.innerHTML = '<span class="spinner">⏳</span> <span>[1/4] 이미지 얼굴 랜드마크 포인팅 중...</span>';
     await delay(800);
 
-    statusMsg.innerHTML = currentMode === 'front'
-      ? '<span class="spinner">⏳</span> <span>[2/4] 삼정 비율 및 관상 척도 계산 중...</span>'
-      : '<span class="spinner">⏳</span> <span>[2/4] 귀 높낮이 및 귓볼 두께 벡터 추정 중...</span>';
+    statusMsg.innerHTML = '<span class="spinner">⏳</span> <span>[2/4] 관상 척도 및 각도 계산 중...</span>';
     await delay(800);
 
     try {
-      const detections = await faceapi.detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.25 }))
+      const detections = await faceapi.detectSingleFace(targetElement, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.25 }))
                                       .withFaceLandmarks()
                                       .withAgeAndGender();
 
@@ -538,19 +648,19 @@
         
         const resizedDetections = faceapi.resizeResults(detections, displaySize);
 
-        // 핵심 수정: 비디오 정지 대신 현재 카메라 프레임을 캔버스 바닥에 렌더링
+        // 정지 장면 / 사진 고정 렌더링
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        ctx.drawImage(targetElement, 0, 0, canvas.width, canvas.height);
 
-        // 비디오를 일시 정지하여 스캔 순간의 장면 고정
-        try { video.pause(); } catch(e){}
+        if (currentMode !== 'upload') {
+          try { video.pause(); } catch(e){}
+        }
 
-        // 정지된 캔버스 배경 위에 랜드마크 그리기
+        // 랜드마크 그리기
         faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
 
         const positions = resizedDetections.landmarks.positions;
 
-        // 귀/측면 모드 가이딩
         if (currentMode === 'ear') {
           const isTurnedRight = positions[30].x - positions[0].x < positions[16].x - positions[30].x;
           const earX = isTurnedRight ? positions[0].x - 20 : positions[16].x + 20;
@@ -566,7 +676,6 @@
           ctx.font = "bold 12px sans-serif";
           ctx.fillText("EAR SCAN", earX - 28, earY - 50);
         } else {
-          // 정면 모드 가이딩
           const eyebrowY = (positions[21].y + positions[22].y) / 2;
           const noseBottomY = positions[33].y;
           const midLen = noseBottomY - eyebrowY;
@@ -590,20 +699,20 @@
         scanOverlay.classList.remove("active");
         isScanning = false;
         btnCapture.disabled = false;
-        btnCapture.innerText = currentMode === 'front' ? "다시 정면 스캔하기 📸" : "다시 귀 스캔하기 📸";
+        btnCapture.innerText = currentMode === 'upload' ? "다른 사진 선택 / 다시 스캔하기 📁" : "다시 스캔하기 📸";
         statusMsg.innerHTML = '<span>✅ 스캔 완료! 아래 심층 리포트를 확인하세요.</span>';
         statusMsg.style.background = "#15803d";
 
-        if (currentMode === 'front') {
-          analyzeFront(resizedDetections);
-        } else {
+        if (currentMode === 'ear') {
           analyzeEar(resizedDetections);
+        } else {
+          analyzeFront(resizedDetections);
         }
       } else {
         scanOverlay.classList.remove("active");
         isScanning = false;
         btnCapture.disabled = false;
-        statusMsg.innerHTML = '<span>⚠️ 얼굴/귀 방향을 인식하지 못했습니다. 조명 및 각도를 조정해 주세요.</span>';
+        statusMsg.innerHTML = '<span>⚠️ 얼굴을 찾지 못했습니다. 사진 가이드를 확인하고 다른 사진을 올려주세요.</span>';
         statusMsg.style.background = "#b91c1c";
       }
     } catch (e) {
@@ -611,7 +720,7 @@
       scanOverlay.classList.remove("active");
       isScanning = false;
       btnCapture.disabled = false;
-      statusMsg.innerHTML = '<span>❌ 오류 발생. 다시 시도해 주세요.</span>';
+      statusMsg.innerHTML = '<span>❌ 오류가 발생했습니다. 다시 시도해 주세요.</span>';
       statusMsg.style.background = "#b91c1c";
     }
   }
@@ -680,16 +789,16 @@
                         : "눈썹과 눈이 가까워 결단력이 빠름. 집중력이 뛰어남.";
 
     document.getElementById("feat-eye").innerText = 
-      eyeWidth > 25 ? "눈매가 길고 또렷함. 관찰력과 통찰력이 뛰어나 사물의 본질을 잘 파악함." 
-                    : "눈빛이 모여있고 야무짐. 실속을 잘 챙기며 목표 의식이 명확함.";
+      eyeWidth > 25 ? "눈매가 길고 또렷함. 관찰력과 통찰력이 뛰어남." 
+                    : "눈빛이 모여있고 야무짐. 실속을 잘 챙김.";
 
     document.getElementById("feat-nose").innerText = 
-      midPct >= 35 ? "콧대와 중정이 튼튼함. 재물 운용 능력이 우수하며 중년기에 큰 성취를 이룸." 
-                   : "코의 비율이 원만함. 대인관계가 유연하며 협력을 통해 실속을 다짐.";
+      midPct >= 35 ? "콧대와 중정이 튼튼함. 재물 운용 능력이 우수함." 
+                   : "코의 비율이 원만함. 대인관계가 유연함.";
 
     document.getElementById("feat-mouth").innerText = 
-      mouthWidth > 35 ? "입이 크고 하관이 받쳐줌. 베푸는 덕이 있어 나이가 들수록 인복과 말년 자산이 가득함." 
-                      : "입매가 단정하고 하관이 안정적. 언변이 신중하며 내실 있는 말년 안식을 누림.";
+      mouthWidth > 35 ? "입이 크고 하관이 받쳐줌. 베푸는 덕이 있어 말년 자산이 가득함." 
+                      : "입매가 단정하고 하관이 안정적. 언변이 신중함.";
 
     document.getElementById("badge-top").innerText = topPct >= 34 ? "최상" : "보통";
     document.getElementById("key-top").innerText = "🔑 지혜, 아이디어, 학업/초년 기반";
