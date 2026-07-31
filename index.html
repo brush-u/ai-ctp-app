@@ -232,7 +232,7 @@
       background: #1e293b;
       padding: 12px;
       border-radius: 8px;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       border-left: 4px solid #6366f1;
     }
     .detail-header {
@@ -242,19 +242,44 @@
       margin-bottom: 6px;
     }
     .detail-section h4 { color: #facc15; font-size: 0.88rem; }
-    .badge {
-      font-size: 0.7rem;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-weight: bold;
-    }
-    .badge-excellent { background: #15803d; color: #4ade80; }
-    .badge-good { background: #1e40af; color: #60a5fa; }
-    .badge-normal { background: #374151; color: #d1d5db; }
 
-    .detail-section p { font-size: 0.8rem; line-height: 1.55; color: #e2e8f0; }
-    .sub-item { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #334155; }
-    .sub-title { color: #38bdf8; font-weight: bold; font-size: 0.78rem; margin-bottom: 2px; }
+    .shape-desc {
+      background: #0f172a;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      color: #38bdf8;
+      margin-bottom: 8px;
+      border: 1px solid #334155;
+    }
+
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .good-box {
+      background: rgba(22, 101, 52, 0.2);
+      border: 1px solid #15803d;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      line-height: 1.4;
+      color: #bbf7d0;
+    }
+    .good-box strong { color: #4ade80; display: block; margin-bottom: 2px; }
+
+    .bad-box {
+      background: rgba(153, 27, 27, 0.2);
+      border: 1px solid #991b1b;
+      padding: 8px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      line-height: 1.4;
+      color: #fecaca;
+    }
+    .bad-box strong { color: #f87171; display: block; margin-bottom: 2px; }
   </style>
 </head>
 <body>
@@ -330,9 +355,9 @@
 
     <div class="detail-section" style="border-left-color: #a855f7; margin-top: 10px;">
       <div class="detail-header">
-        <h4>💡 관상 총평 및 종합 개운(開運) 지침</h4>
+        <h4>💡 관상 총평 및 현실적 개운(開運) 조언</h4>
       </div>
-      <p id="desc-summary">-</p>
+      <p id="desc-summary" style="font-size:0.8rem; line-height:1.5; color:#e2e8f0;">-</p>
     </div>
   </div>
 </div>
@@ -373,7 +398,6 @@
     adjustTip.style.display = "none";
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // 카메라인 경우 다시 작동시킴
     if (video.paused && mediaStream) {
       video.play();
     }
@@ -489,7 +513,6 @@
       return;
     }
 
-    // 카메라 재생 재개 후 스캔 진행
     if (currentMode !== 'upload' && video.paused) {
       video.play();
     }
@@ -497,11 +520,10 @@
     runAnalysis();
   }
 
-  // AI 분석 알고리즘 (얼굴 화면 고정 + 점 오버레이 보장)
   async function runAnalysis() {
     scanOverlay.classList.add("active");
     adjustTip.style.display = "none";
-    statusMsg.innerText = "⏳ 정밀 스캔 중... 이목구비 68개 랜드마크 데이터 추출 중";
+    statusMsg.innerText = "⏳ 정밀 스캔 중... 이목구비 기하학 좌표 및 비대칭도 측정 중";
     statusMsg.style.background = "#334155";
     resultCard.style.display = "none";
 
@@ -523,14 +545,12 @@
         scanOverlay.classList.remove("active");
 
         if (detections) {
-          // ★ 카메라를 그 순간 일시정지(Freeze)하여 스캔된 고정 얼굴 위에 점이 남도록 조치
           if (currentMode !== 'upload') {
             video.pause();
           }
 
           const resized = faceapi.resizeResults(detections, displaySize);
           
-          // 캔버스 초기화 후 얼굴 랜드마크 점 보장 그리기
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           faceapi.draw.drawFaceLandmarks(canvas, resized);
 
@@ -553,7 +573,6 @@
     }, 1600);
   }
 
-  // 위치 재조정 가이드 출력
   function showAdjustGuide() {
     if (currentMode !== 'upload' && video.paused) {
       video.play();
@@ -575,19 +594,19 @@
     adjustTip.style.display = "block";
   }
 
-  // 정면 정밀 해설 리포트
+  // 정면 분석 (장점 vs 단점 + 구체적 모양 묘사 추가)
   function generateFrontReport(detections) {
     const isMale = detections.gender === "male";
     const age = Math.round(detections.age);
     const pos = detections.landmarks.positions;
 
-    document.getElementById("result-main-title").innerText = "📊 정면 정밀 관상 분석 리포트";
+    document.getElementById("result-main-title").innerText = "📊 정면 정밀 관상 리포트 (장·단점 솔직 분석)";
     document.getElementById("res-gender").innerText = isMale ? "남성 ♂️" : "여성 ♀️";
     document.getElementById("res-age").innerText = `약 ${age}세`;
     document.getElementById("celeb-container").style.display = "block";
     document.getElementById("ratio-container").style.display = "flex";
 
-    // 1) 삼정 계산
+    // 1) 삼정 비율 계산
     const topY = pos[21].y; 
     const midY = pos[33].y; 
     const botY = pos[8].y;  
@@ -606,7 +625,7 @@
     document.getElementById("r-mid").innerText = `${mPct}%`;
     document.getElementById("r-bot").innerText = `${bPct}%`;
 
-    // 2) 이목구비 정밀 기하학 계산
+    // 2) 이목구비 정밀 치수
     const noseWidth = Math.abs(pos[35].x - pos[31].x);
     const faceWidth = Math.abs(pos[16].x - pos[0].x);
     const noseRatio = noseWidth / faceWidth;
@@ -617,7 +636,6 @@
     const eyeLeftWidth = Math.abs(pos[39].x - pos[36].x);
     const eyeRatio = eyeLeftWidth / faceWidth;
 
-    // 오행 및 닮은꼴 매칭
     const genderKey = isMale ? 'male' : 'female';
     let celebList = CELEB_DB[genderKey].mid;
     let elementType = "토(土)형 - 포용력 및 신뢰형";
@@ -637,62 +655,95 @@
     document.getElementById("res-element").innerText = elementType;
     document.getElementById("res-celeb").innerText = `${randomCeleb} (${Math.floor(Math.random()*8 + 90)}% 싱크로율)`;
 
-    // 정밀 해설 텍스트 가공
+    // 부위별 비유 묘사 및 장/단점 가공
     const detailsDiv = document.getElementById("details-container");
-    
-    let noseDetail = noseRatio > 0.23 
-      ? "<b>[코 & 준두 (재백궁)]</b> 코의 너비와 준두(코끝)가 두툼하고 곧게 형성되어 있습니다. 관상학적으로 이는 중년기에 막대한 재물을 축적하고 지키는 '수장(守藏)의 복'을 가진 상입니다."
-      : "<b>[코 & 준두 (재백궁)]</b> 코의 매끄러운 라인과 곧은 코대가 돋보입니다. 지적 판단력이 명쾌하며, 재물보다는 자신의 전문성과 명예를 통해 큰 성공을 이루는 관상입니다.";
 
-    let lipDetail = lipRatio > 0.38 
-      ? "<b>[입 & 출납관]</b> 입의 기세가 크고 입술 선이 뚜렷합니다. 대인관계에서 사교성이 탁월하며, 유려한 언변과 도량으로 사람들을 이끄는 리더십의 관상입니다."
-      : "<b>[입 & 출납관]</b> 입술 단정이 매끄럽고 굳건합니다. 약속과 기밀을 엄수하며 치밀하고 계획적으로 말년의 안정된 대기만성을 이루게 됩니다.";
+    // 코 묘사
+    const noseShapeDesc = noseRatio > 0.23
+      ? "📐 [모양새] 코 끝(준두)이 두툼하고 주머니처럼 돈을 싸쥐고 있는 '주머니형(쓸개) 코'"
+      : "📐 [모양새] 코대가 날렵하고 칼날처럼 곧게 뻗은 '대나무 마디형 칼코'";
 
-    let eyeDetail = eyeRatio > 0.12 
-      ? "<b>[눈 & 감찰관]</b> 눈의 가로 길이가 길고 시원하여 상황을 한눈에 통찰하는 뛰어난 직관력을 지니고 있습니다."
-      : "<b>[눈 & 감찰관]</b> 눈매가 단정하고 또렷하여 관찰력이 깊고, 신중하게 실수를 줄이는 완벽주의 성향을 보여줍니다.";
+    const noseGood = noseRatio > 0.23
+      ? "중년기에 수장(守藏)의 복이 있어 재물이 쉽게 새나가지 않고 안정적으로 축적됨."
+      : "지적 판단력이 주관적이고 명쾌하여 전문 직무나 사업적 결단에서 강한 명예를 얻음.";
+
+    const noseBad = noseRatio > 0.23
+      ? "재물에 대한 집착이 강해 보일 수 있어 주위 사람에게 자칫 짠돌이로 오해받을 수 있음."
+      : "코 끝의 살집이 상대적으로 얇아 타인에게 지나치게 차갑거나 독단적인 인상을 줄 수 있음.";
+
+    // 입술 묘사
+    const lipShapeDesc = lipRatio > 0.38
+      ? "📐 [모양새] 좌우로 넓게 시원하게 벌어진 '대범한 사자형 입'"
+      : "📐 [모양새] 입술 라인이 야무지게 다물어진 '단정한 조개형 입술'";
+
+    const lipGood = lipRatio > 0.38
+      ? "대인관계 도량이 넓고 말솜씨가 호탕하여 주변에 사람과 리더십이 몰림."
+      : "비밀 유지가 철저하고 언행이 신중하여 말년 자산을 손실 없이 보존함.";
+
+    const lipBad = lipRatio > 0.38
+      ? "말을 많이 하다 보면 구설수(口舌數)에 휘말리기 쉬우므로 언행 실수를 주의해야 함."
+      : "자신의 속내를 타인에게 잘 드러내지 않아 소통 부족으로 오해를 살 위험이 있음.";
+
+    // 눈 묘사
+    const eyeShapeDesc = eyeRatio > 0.12
+      ? "📐 [모양새] 가로로 길게 찢어져 판세를 통찰하는 '봉황의 눈매'"
+      : "📐 [모양새] 동공이 또렷하고 눈매가 깊은 '신중한 수호의 눈'";
+
+    const eyeGood = eyeRatio > 0.12
+      ? "상황 판판력이 뛰어나 기회를 빠르게 포착하고 판세를 관조하는 안목이 탁월함."
+      : "관찰력이 치밀하여 실수가 적고 상대방의 진심을 파악하는 통찰력이 뛰어남.";
+
+    const eyeBad = eyeRatio > 0.12
+      ? "지나치게 계산적이거나 차가워 보일 수 있어 감정적 유대감이 약해질 수 있음."
+      : "생각이 너무 많아 결정적인 기회 앞에서 주저하다 타이밍을 놓칠 우려가 있음.";
 
     detailsDiv.innerHTML = `
       <div class="detail-section" style="border-left-color: #38bdf8;">
         <div class="detail-header">
-          <h4>🌱 상정 (이마 & 눈썹) - 초년운 / 지혜</h4>
-          <span class="badge ${tPct >= 33 ? 'badge-excellent' : 'badge-good'}">${tPct >= 33 ? '매우 우수 🌟' : '양호 👍'}</span>
+          <h4>🌱 상정 (이마 & 눈) - 지혜 / 초년</h4>
         </div>
-        <p>이마의 기세와 관록궁 영역이 널찍하고 시원합니다. 초년 창의력이 뛰어나며 학문이나 전문 기획 분야에서 빠른 두각을 나타냅니다.</p>
-        <div class="sub-item"><p>${eyeDetail}</p></div>
+        <div class="shape-desc">${eyeShapeDesc}</div>
+        <div class="analysis-grid">
+          <div class="good-box"><strong>🟢 장점 (기회)</strong>${eyeGood}</div>
+          <div class="bad-box"><strong>🔴 단점 (주의)</strong>${eyeBad}</div>
+        </div>
       </div>
 
       <div class="detail-section" style="border-left-color: #f59e0b;">
         <div class="detail-header">
-          <h4>🔥 중정 (눈썹~코끝) - 중년운 / 재물 / 사업</h4>
-          <span class="badge ${mPct >= 34 ? 'badge-excellent' : 'badge-good'}">${mPct >= 34 ? '매우 우수 🌟' : '양호 👍'}</span>
+          <h4>🔥 중정 (코 & 재백궁) - 재물 / 사업</h4>
         </div>
-        <p>30대~50대 중년 시기의 경제적 성취와 사회적 지위를 결정짓는 가장 핵심적인 구간입니다.</p>
-        <div class="sub-item"><p>${noseDetail}</p></div>
+        <div class="shape-desc">${noseShapeDesc}</div>
+        <div class="analysis-grid">
+          <div class="good-box"><strong>🟢 장점 (기회)</strong>${noseGood}</div>
+          <div class="bad-box"><strong>🔴 단점 (주의)</strong>${noseBad}</div>
+        </div>
       </div>
 
       <div class="detail-section" style="border-left-color: #10b981;">
         <div class="detail-header">
-          <h4>🛡️ 하정 (코끝~턱) - 말년운 / 인복 / 하관</h4>
-          <span class="badge ${bPct >= 33 ? 'badge-excellent' : 'badge-normal'}">${bPct >= 33 ? '매우 우수 🌟' : '보통 ⚖️'}</span>
+          <h4>🛡️ 하정 (입 & 턱) - 인복 / 말년</h4>
         </div>
-        <p>턱의 지지력과 지각(地閣) 부위가 든든하여 아랫사람 복과 노후의 자산 관리가 안정적입니다.</p>
-        <div class="sub-item"><p>${lipDetail}</p></div>
+        <div class="shape-desc">${lipShapeDesc}</div>
+        <div class="analysis-grid">
+          <div class="good-box"><strong>🟢 장점 (기회)</strong>${lipGood}</div>
+          <div class="bad-box"><strong>🔴 단점 (주의)</strong>${lipBad}</div>
+        </div>
       </div>
     `;
 
     document.getElementById("desc-summary").innerText = 
-      `전반적으로 이목구비의 균형성이 훌륭하며 ${elementType}의 운세적 강점이 명확합니다. 타고난 중년 재물운과 결단력을 바탕으로 사회적 성공을 실현할 수 있는 유망한 관상입니다.`;
+      `타고난 강점(${elementType})은 극대화하되, 특히 중정/하정에서 나타나는 '언행으로 인한 구설수'나 '지나친 차가움'을 경계해야 합니다. 평소 입꼬리를 올리는 미소와 상대를 배려하는 언어 습관을 기르면 흉한 기운이 완벽히 덕(德)으로 변화합니다.`;
 
     resultCard.style.display = "block";
   }
 
-  // 측면/귀 정밀 해설 리포트
+  // 측면/귀 분석 (장점 vs 단점 솔직 분석)
   function generateSideReport(detections) {
     const isMale = detections.gender === "male";
     const age = Math.round(detections.age);
 
-    document.getElementById("result-main-title").innerText = "📊 측면 & 귀(채청관) 정밀 관상 리포트";
+    document.getElementById("result-main-title").innerText = "📊 측면 & 귀 관상 리포트 (장·단점 솔직 분석)";
     document.getElementById("res-gender").innerText = isMale ? "남성 ♂️" : "여성 ♀️";
     document.getElementById("res-age").innerText = `약 ${age}세`;
     
@@ -705,40 +756,45 @@
     detailsDiv.innerHTML = `
       <div class="detail-section" style="border-left-color: #ec4899;">
         <div class="detail-header">
-          <h4>👂 귀(採聽官) 높낮이 및 정보 수용력</h4>
-          <span class="badge badge-excellent">최상 🌟</span>
+          <h4>👂 귀(採聽官) - 정보수용 & 재물복</h4>
         </div>
-        <p><b>[지혜와 명예운]</b> 귀의 윗부분이 눈썹 라인과 비슷하거나 높게 형성되어 타인의 정보와 기회를 빠르게 포착하는 지혜를 가졌습니다. 학문이나 지적 활동에서 높은 명예를 얻을 관상입니다.</p>
-        <div class="sub-item">
-          <p class="sub-title">💎 귓볼(수주) 수복 및 재물 축적력</p>
-          <p>귓볼(수주)의 살집이 도톰하게 아래를 받쳐주고 있어 평생 물질적인 빈곤함이 적고 주변 사람들에게 귀인을 얻는 '유정(有情)한 재물복'을 내포하고 있습니다.</p>
+        <div class="shape-desc">📐 [모양새] 귀의 귓볼(수주)이 도톰하고 귓바퀴 윤곽이 뚜렷한 '부처님 귀 형상'</div>
+        <div class="analysis-grid">
+          <div class="good-box">
+            <strong>🟢 장점 (기회)</strong>
+            타인의 이야기를 경청하는 능력이 좋고 귀인의 도움으로 불필요한 재정적 위험을 피함.
+          </div>
+          <div class="bad-box">
+            <strong>🔴 단점 (주의)</strong>
+            귀가 다소 우뚝 서 있어 타인의 달콤한 유혹이나 귀얇음에 속아 투자 손실을 입을 위험이 있음.
+          </div>
         </div>
       </div>
 
       <div class="detail-section" style="border-left-color: #8b5cf6;">
         <div class="detail-header">
-          <h4>🗿 턱선 측면 라인 및 의지력</h4>
-          <span class="badge badge-good">우수 👍</span>
+          <h4>🗿 턱선 측면 라인 - 지구력 & 끈기</h4>
         </div>
-        <p><b>[지구력과 하관운]</b> 귀 아래에서 턱 끝으로 이어지는 측면 각도가 단단하고 곧게 형성되어 있어, 어려운 난관에 부딪혀도 끝까지 밀어붙이는 강인한 실행력과 의지력을 증명합니다.</p>
-      </div>
-
-      <div class="detail-section" style="border-left-color: #f59e0b;">
-        <div class="detail-header">
-          <h4>🌙 뺨과 옆모습 윤곽 (양골)</h4>
-          <span class="badge badge-good">양호 👍</span>
+        <div class="shape-desc">📐 [모양새] 귀 아래에서 턱 끝까지 굳건하게 각진 '암석형 턱선'</div>
+        <div class="analysis-grid">
+          <div class="good-box">
+            <strong>🟢 장점 (기회)</strong>
+            한번 마음먹은 일은 끝까지 밀어붙이는 돌파력과 말년의 밑바탕이 단단함.
+          </div>
+          <div class="bad-box">
+            <strong>🔴 단점 (주의)</strong>
+            고집이 지나치게 세서 타인의 조언을 무시하다가 스스로 고립될 우려가 있음.
+          </div>
         </div>
-        <p><b>[사회적 원만함]</b> 옆 광대와 뺨의 흐름이 각지지 않고 부드럽게 감싸 안고 있어, 조직 내에서 인망을 얻고 타인과의 마찰을 줄이는 유연함을 지니고 있습니다.</p>
       </div>
     `;
 
     document.getElementById("desc-summary").innerText = 
-      "측면 관상학적으로 귀의 수주(귓볼) 기운과 턱선 라인의 받침이 매우 든든합니다. 남의 이야기를 잘 경청하면서도 자신의 소신을 굽히지 않는 균형감을 유지할 때 더 큰 운이 개운(開運)됩니다.";
+      "측면 관상상 턱선의 강한 추진력이 무기이지만, 고집으로 인한 타인과의 마찰을 주의해야 합니다. 남의 말을 귀담아듣되 주관을 지키는 유연성을 키우면 귀인의 복이 곱절로 늘어납니다.";
 
     resultCard.style.display = "block";
   }
 
-  // AI 신경망 로딩
   async function initAI() {
     try {
       const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
