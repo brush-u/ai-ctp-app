@@ -112,37 +112,35 @@
       line-height: 1.3;
     }
 
-    /* 🌟 카메라 뷰 왜곡 및 좌표 밀림 완벽 해결 (object-fit: cover 및 완벽한 중앙 정렬) */
+    /* 🌟 영상 왜곡 및 좌표 오차 원천 차단 (컨테이너에 영상 비율 맞춤) */
     .video-wrapper {
       position: relative;
       width: 100%;
-      height: 340px;
       background: #000;
       border-radius: 12px;
       overflow: hidden;
       margin-bottom: 10px;
       border: 2px solid #334155;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      line-height: 0;
     }
 
     video, img.uploaded-img, canvas {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
       width: 100%;
-      height: 100%;
-      object-fit: cover;
+      height: auto;
+      display: block;
     }
 
     canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
       pointer-events: none;
       z-index: 2;
     }
     video, img.uploaded-img {
+      position: relative;
       z-index: 1;
+      object-fit: fill;
     }
 
     .scan-overlay {
@@ -566,7 +564,7 @@
     if (mediaStream) return;
     try {
       mediaStream = await navigator.mediaDevices.getUserMedia({ 
-        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" }, 
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" }, 
         audio: false 
       });
       video.srcObject = mediaStream;
@@ -615,19 +613,19 @@
 
     const targetEl = currentMode === 'upload' ? imgPreview : video;
     
-    // 🌟 100% 완벽한 좌표 일치를 위해 비디오/이미지의 실제 네이티브 해상도(Intrinsic Size) 적용
-    const mediaWidth = targetEl.videoWidth || targetEl.naturalWidth || targetEl.clientWidth;
-    const mediaHeight = targetEl.videoHeight || targetEl.naturalHeight || targetEl.clientHeight;
+    // 🌟 비디오/이미지의 실제 네이티브 픽셀 크기를 캔버스 해상도에 1:1로 직접 장착
+    const w = targetEl.videoWidth || targetEl.naturalWidth || targetEl.clientWidth || 640;
+    const h = targetEl.videoHeight || targetEl.naturalHeight || targetEl.clientHeight || 480;
 
-    canvas.width = mediaWidth;
-    canvas.height = mediaHeight;
+    canvas.width = w;
+    canvas.height = h;
     
-    const displaySize = { width: mediaWidth, height: mediaHeight };
+    const displaySize = { width: w, height: h };
     faceapi.matchDimensions(canvas, displaySize);
 
     setTimeout(async () => {
       try {
-        const detections = await faceapi.detectSingleFace(targetEl, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.2 }))
+        const detections = await faceapi.detectSingleFace(targetEl, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.1 }))
                                         .withFaceLandmarks()
                                         .withAgeAndGender();
 
@@ -653,8 +651,8 @@
           
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           faceapi.draw.drawFaceLandmarks(canvas, resized, {
-            pointColor: { color: '#38bdf8', lineWidth: Math.max(2, mediaWidth / 250) },
-            boxColor: { color: '#facc15', lineWidth: Math.max(1, mediaWidth / 400) }
+            pointColor: { color: '#38bdf8', lineWidth: 3 },
+            boxColor: { color: '#facc15', lineWidth: 2 }
           });
 
           if (currentMode === 'ear') generateSideReport(resized);
@@ -806,8 +804,8 @@
       if (lastAnalyzedLandmarks) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         faceapi.draw.drawFaceLandmarks(canvas, lastAnalyzedLandmarks, {
-          pointColor: { color: '#38bdf8', lineWidth: Math.max(2, canvas.width / 250) },
-          boxColor: { color: '#facc15', lineWidth: Math.max(1, canvas.width / 400) }
+          pointColor: { color: '#38bdf8', lineWidth: 3 },
+          boxColor: { color: '#facc15', lineWidth: 2 }
         });
       }
       const canvasResult = await html2canvas(captureContainer, { backgroundColor: '#0f172a', scale: 2, useCORS: true });
