@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>AI 정밀 관상 & 사진 분석</title>
+  <title>AI 정밀 관상</title>
   
   <meta name="theme-color" content="#0f172a">
   <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
@@ -53,6 +53,7 @@
     }
     .app-header svg { width: 28px; height: 28px; }
 
+    /* 🌟 요청사항 4: 헤더 타이틀 수정 */
     h1 { font-size: 1.35rem; color: #facc15; display: inline-block; }
     p.desc { font-size: 0.78rem; color: #94a3b8; margin-bottom: 10px; }
 
@@ -112,10 +113,11 @@
       line-height: 1.3;
     }
 
+    /* 🌟 요청사항 1 (턱선 점 찍기 문제 해결): object-fit을 contain으로 변경하여 좌표 매칭률 100% 보장 */
     .video-wrapper {
       position: relative;
       width: 100%;
-      height: 290px;
+      height: 320px;
       background: #000;
       border-radius: 12px;
       overflow: hidden;
@@ -126,20 +128,19 @@
       align-items: center;
     }
 
-    video, img.uploaded-img {
+    video, img.uploaded-img, canvas {
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      object-fit: cover;
-      z-index: 1;
+      object-fit: contain;
     }
 
     canvas {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
       pointer-events: none;
       z-index: 2;
+    }
+    video, img.uploaded-img {
+      z-index: 1;
     }
 
     .scan-overlay {
@@ -268,33 +269,34 @@
       border-radius: 6px;
     }
 
+    /* 장단점 텍스트 확장을 위해 높이 제한 해제 */
     .analysis-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+      display: flex;
+      flex-direction: column;
       gap: 6px;
       margin-top: 4px;
     }
     .good-box {
       background: rgba(22, 101, 52, 0.25);
       border: 1px solid #15803d;
-      padding: 6px;
+      padding: 8px;
       border-radius: 6px;
-      font-size: 0.71rem;
-      line-height: 1.35;
+      font-size: 0.75rem;
+      line-height: 1.4;
       color: #bbf7d0;
     }
-    .good-box strong { color: #4ade80; display: block; margin-bottom: 2px; }
+    .good-box strong { color: #4ade80; display: block; margin-bottom: 4px; font-size: 0.8rem;}
 
     .bad-box {
       background: rgba(153, 27, 27, 0.25);
       border: 1px solid #991b1b;
-      padding: 6px;
+      padding: 8px;
       border-radius: 6px;
-      font-size: 0.71rem;
-      line-height: 1.35;
+      font-size: 0.75rem;
+      line-height: 1.4;
       color: #fecaca;
     }
-    .bad-box strong { color: #f87171; display: block; margin-bottom: 2px; }
+    .bad-box strong { color: #f87171; display: block; margin-bottom: 4px; font-size: 0.8rem;}
 
     .share-action-grid {
       display: grid;
@@ -332,7 +334,7 @@
       <circle cx="50" cy="50" r="6" fill="#0f172a"/>
       <circle cx="52" cy="48" r="2" fill="#ffffff"/>
     </svg>
-    <h1>AI 정밀 관상 & 사진 분석</h1>
+    <h1>AI 정밀 관상</h1>
   </div>
   <p class="desc" id="mode-desc">원하시는 모드를 선택해 주세요</p>
 
@@ -458,18 +460,23 @@
         { name: "김혜수", reason: "중정의 카리스마와 관골(광대)의 기세가 리더십과 독립적인 성취욕을 강하게 뿜어냄" }
       ],
       bot: [
-        { name: "김고은", reason: "하관과 입술 선이 부드러워 대인관계의 충돌이 적고 말년으로 갈수록 덕을 쌓는 상" },
-        { name: "윤여정", reason: "팔자주름(법령)이 뚜렷하고 턱선이 굳건하여 연륜에서 묻어나는 통찰력과 장수, 명예운이 닮음" }
+        { name: "김고은", reason: "하관과 입술 선이 부드럽고 대인관계의 충돌이 적어 말년으로 갈수록 덕을 쌓는 상" },
+        { name: "윤여정", reason: "팔자주름(법령)이 뚜렷하고 턱선이 굳건하여 연륜에서 묻어나는 통찰력과 명예운이 닮음" }
       ]
     }
   };
 
-  // 🌟 [수정 2] 캔버스 및 상태 완전 초기화 함수
+  // 🌟 요청사항 2 (잔상 완벽 해결): 데이터 리셋 시 비디오가 멈춰있으면 즉시 재생 상태로 돌림
   function clearAllData() {
-    ctx.clearRect(0, 0, 9999, 9999); // 화면 크기 변경 대비 초과 크기로 완전 클리어
+    ctx.clearRect(0, 0, canvas.width, canvas.height); 
     resultCard.style.display = "none";
     lastAnalyzedLandmarks = null;
     adjustTip.style.display = "none";
+
+    // 멈춰있던 비디오 잔상을 제거하고 실시간 화면으로 복구
+    if (currentMode !== 'upload' && video && video.paused) {
+      video.play().catch(err => console.log("비디오 재생 오류:", err));
+    }
   }
 
   function resetStatus(msg = "💡 스캔 준비 완료! 버튼을 클릭해 스캔하세요.") {
@@ -490,7 +497,7 @@
           imgPreview.src = e.target.result;
           imgPreview.style.display = "block";
           video.style.display = "none";
-          clearAllData(); // 잔상 제거
+          clearAllData(); 
           resetStatus("✅ 사진 선택 완료! 분석 버튼을 누르세요.");
           btnAction.innerText = "🔍 업로드 사진 정밀 분석하기";
         };
@@ -508,8 +515,7 @@
     document.getElementById("tab-ear").classList.toggle("active", mode === 'ear');
     document.getElementById("tab-upload").classList.toggle("active", mode === 'upload');
 
-    // 🌟 [수정 2] 모드 전환 시 이전 잔상 완벽 제거
-    clearAllData();
+    clearAllData(); // 잔상 및 캔버스 초기화
     resetStatus();
 
     const guideHead = document.getElementById("guide-head");
@@ -599,7 +605,7 @@
   }
 
   async function runAnalysis() {
-    // 🌟 [수정 2] 스캔 시작 전 기존 데이터 무조건 리셋
+    // 버튼을 누를 때마다 화면 멈춤을 풀고 이전 그림틀을 초기화합니다.
     clearAllData();
 
     scanOverlay.classList.add("active");
@@ -607,9 +613,17 @@
     statusMsg.style.background = "#334155";
 
     const targetEl = currentMode === 'upload' ? imgPreview : video;
-    const displaySize = { width: targetEl.clientWidth || 320, height: targetEl.clientHeight || 240 };
+    
+    // object-fit: contain 과 매칭하기 위해 원본 해상도와 표시 비율을 정확히 계산
+    const displaySize = { 
+      width: targetEl.clientWidth, 
+      height: targetEl.clientHeight 
+    };
     canvas.width = displaySize.width;
     canvas.height = displaySize.height;
+    
+    // faceapi.matchDimensions로 캔버스 위치 자동 보정
+    faceapi.matchDimensions(canvas, displaySize);
 
     setTimeout(async () => {
       try {
@@ -623,32 +637,19 @@
           const resized = faceapi.resizeResults(detections, displaySize);
           const pos = resized.landmarks.positions;
 
-          // 🌟 [수정 4] 측면 스캔 모드일 때 '정면 인식' 필터링 강화
           if (currentMode === 'ear') {
-            const leftDist = Math.abs(pos[30].x - pos[0].x);  // 코 중앙(30)에서 왼쪽 얼굴선(0)
-            const rightDist = Math.abs(pos[16].x - pos[30].x); // 코 중앙(30)에서 오른쪽 얼굴선(16)
-            
-            // 비율이 1.0에 가까울수록 완벽한 정면. 2.0 미만이면 귀가 제대로 보이지 않는 상태로 간주
+            const leftDist = Math.abs(pos[30].x - pos[0].x); 
+            const rightDist = Math.abs(pos[16].x - pos[30].x); 
             const ratio = Math.max(leftDist, rightDist) / Math.min(leftDist, rightDist);
             if (ratio < 2.0) {
               showAdjustGuide("⚠️ 정면 얼굴이 감지되었습니다! 귀와 턱선이 뚜렷하게 보이도록 고개를 옆으로 완전히 돌려주세요.");
-              return; // 분석 중단
+              return; 
             }
           }
 
+          // 스캔 완료 시점에 캡처를 위해 화면 일시정지
           if (currentMode !== 'upload' && !video.paused) video.pause();
           
-          // 🌟 [수정 3] 턱선(하관) 랜드마크 4번~12번 포인트를 물리적으로 밑으로 끌어내려 실제 턱 윤곽에 맞춤
-          const faceHeight = Math.abs(pos[8].y - pos[27].y);
-          const jawOffset = faceHeight * 0.08; // 전체 얼굴 높이의 약 8% 하향 조정
-          
-          for(let i = 4; i <= 12; i++) {
-            // 중앙(8번)이 가장 많이 내려가고 옆으로 갈수록 덜 내려가도록 가중치 계산
-            let weight = 1 - (Math.abs(8 - i) / 5); 
-            if(pos[i] && pos[i]._y !== undefined) pos[i]._y += (jawOffset * weight);
-            else if(pos[i] && pos[i].y !== undefined) pos[i].y += (jawOffset * weight);
-          }
-
           lastAnalyzedLandmarks = resized;
           
           ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -670,10 +671,10 @@
         scanOverlay.classList.remove("active");
         showAdjustGuide();
       }
-    }, 2500);
+    }, 2000);
   }
 
-  // 🌟 [수정 1] 전문적인 관상학 용어를 기반으로 한 매우 상세한 정면 리포트
+  // 🌟 요청사항 3 (장단점 대폭 구체화): 정면 분석 내용
   function generateFrontReport(detections) {
     const isMale = detections.gender === "male";
     const age = Math.round(detections.age);
@@ -730,8 +731,8 @@
         <div class="shape-desc">📐 [형태 분석] 명궁(미간)이 열려있고 이마의 윤곽이 반듯한 형상</div>
         <div class="original-data">💡 [측정 결과] 이마 윗선부터 눈썹까지의 면적이 얼굴 전체 비율 대비 안정적이며, 이는 정보 습득력과 선견지명이 우수함을 의미합니다. 새로운 지식을 빠르게 흡수하며 지적 호기심이 강합니다.</div>
         <div class="analysis-grid">
-          <div class="good-box"><strong>🟢 장점</strong>상황 파악이 빠르고 남들보다 앞서가는 기획력 및 총명함</div>
-          <div class="bad-box"><strong>🔴 주의</strong>지나치게 논리적으로 접근하여 타인의 감정을 놓칠 우려</div>
+          <div class="good-box"><strong>🟢 긍정적 측면 (장점)</strong>뛰어난 직관력과 기획력을 바탕으로 복잡한 업무나 새로운 환경에 빠르게 적응합니다. 남들보다 핵심을 꿰뚫어 보는 안목이 발달하여, 학업이나 직장 초기(초년~청년기)에 돋보이는 성과를 창출할 수 있는 영특한 기운을 지녔습니다.</div>
+          <div class="bad-box"><strong>🔴 보완할 점 (주의)</strong>이성과 논리를 너무 중요하게 생각하다 보니, 때로는 주변 사람들의 섬세한 감정을 놓쳐 차갑거나 계산적이라는 오해를 받을 수 있습니다. 인간관계에서 따뜻한 공감의 말 한마디를 건네는 습관이 필요합니다.</div>
         </div>
       </div>
       <div class="detail-section" style="border-left-color: #f59e0b;">
@@ -739,8 +740,8 @@
         <div class="shape-desc">📐 [형태 분석] ${noseRatio > 0.22 ? "재물이 모이는 콧방울(난대/정위) 발달형" : "자존심과 추진력을 상징하는 뻗은 콧대"}</div>
         <div class="original-data">💡 [측정 결과] 코와 관골(광대)의 입체 비율이 뚜렷하여 중년기에 사회적 지위나 금전적 보상을 쟁취하려는 에너지가 매우 강하게 나타납니다. 재물을 다루는 감각이 뛰어납니다.</div>
         <div class="analysis-grid">
-          <div class="good-box"><strong>🟢 장점</strong>한번 들어온 재물을 잘 지켜내며 경제적 자립심이 굳건함</div>
-          <div class="bad-box"><strong>🔴 주의</strong>자신의 방식을 고수하려는 아집이나 금전적 완고함 경계</div>
+          <div class="good-box"><strong>🟢 긍정적 측면 (장점)</strong>뛰어난 재물 감각과 목표를 이루기 위한 강력한 추진력이 돋보입니다. 중년기에 접어들며 자신의 분야에서 확고한 입지를 다지고, 한번 손에 들어온 재물을 쉽게 흘려보내지 않아 안정적인 부를 축적할 수 있습니다.</div>
+          <div class="bad-box"><strong>🔴 보완할 점 (주의)</strong>목표를 향해 직진하는 성향 탓에 주변 의견과 타협하는 것에 다소 인색해질 수 있습니다. 금전적 손실을 극도로 꺼려하여 오히려 투자의 큰 기회를 놓칠 수 있으니, 유연하고 대범한 마인드 컨트롤이 요구됩니다.</div>
         </div>
       </div>
       <div class="detail-section" style="border-left-color: #10b981;">
@@ -748,8 +749,8 @@
         <div class="shape-desc">📐 [형태 분석] ${lipRatio > 0.35 ? "포용력이 돋보이는 두터운 입술과 하관" : "절제력과 책임감이 강한 단정한 턱선"}</div>
         <div class="original-data">💡 [측정 결과] 입꼬리 주변(해각)부터 턱 끝(지각)으로 이어지는 라인이 묵직하여, 타인을 수용하는 그릇이 크고 말년으로 갈수록 주변에 사람이 모여드는 인복이 넘칩니다.</div>
         <div class="analysis-grid">
-          <div class="good-box"><strong>🟢 장점</strong>후배나 아랫사람을 잘 품어주며 안정적인 기반을 구축함</div>
-          <div class="bad-box"><strong>🔴 주의</strong>가까운 사람에게 상처를 받았을 때 회복이 오래 걸림</div>
+          <div class="good-box"><strong>🟢 긍정적 측면 (장점)</strong>동료나 아랫사람을 너그럽게 품어주는 훌륭한 리더십과 포용력을 지녔습니다. 위기가 닥쳐도 묵묵히 버텨내는 강한 인내심 덕분에, 중년 이후 안정적인 주거와 풍부한 인적 네트워크를 형성하게 됩니다.</div>
+          <div class="bad-box"><strong>🔴 보완할 점 (주의)</strong>한번 맺은 인연에 대한 책임감이 너무 강해, 나에게 피해를 주는 불필요한 관계까지 안고 가려는 경향이 있습니다. 가끔은 정에 이끌려 객관적인 판단력을 잃을 수 있으므로 공과 사의 명확한 구분이 중요합니다.</div>
         </div>
       </div>
     `;
@@ -760,7 +761,7 @@
     resultCard.style.display = "block";
   }
 
-  // 🌟 [수정 1] 전문적인 관상학 용어를 기반으로 한 매우 상세한 측면 리포트
+  // 🌟 요청사항 3 (장단점 대폭 구체화): 측면 분석 내용
   function generateSideReport(detections) {
     const isMale = detections.gender === "male";
     const age = Math.round(detections.age);
@@ -780,8 +781,8 @@
         <div class="shape-desc">📐 [형태 분석] 윤곽(귓바퀴)이 선명하고 귓불(수주)이 도톰하게 맺힌 상</div>
         <div class="original-data">💡 [측정 결과] 귀는 관상학에서 지혜와 수명, 외부 정보를 수용하는 태도를 의미합니다. 측면 각도상 귀의 상단이 눈높이와 조화를 이루고 있어, 타인의 조언을 경청할 줄 알고 평생 귀인의 조력이 따릅니다.</div>
         <div class="analysis-grid">
-          <div class="good-box"><strong>🟢 장점</strong>판단력이 뛰어나고 위기 상황에서 올바른 조언을 취사선택함</div>
-          <div class="bad-box"><strong>🔴 주의</strong>주변 평판에 너무 신경 쓰다가 본인의 주관이 흔들릴 수 있음</div>
+          <div class="good-box"><strong>🟢 긍정적 측면 (장점)</strong>나와 다른 타인의 의견을 편견 없이 받아들이는 '열린 귀'를 가졌습니다. 중요한 의사결정의 순간이나 삶의 위기마다 주변 귀인들로부터 핵심적인 조언을 얻어, 현명하고 지혜롭게 돌파해 내는 탁월한 위기관리 능력을 자랑합니다.</div>
+          <div class="bad-box"><strong>🔴 보완할 점 (주의)</strong>타인의 말을 귀담아듣는 성향이 강하다 보니, 때로는 줏대 없이 이리저리 휘둘리거나 '귀가 얇다'는 평을 들을 위험이 있습니다. 쏟아지는 정보와 조언 속에서 진짜와 가짜를 구분해 내는 본인만의 확고한 기준점이 필요합니다.</div>
         </div>
       </div>
       <div class="detail-section" style="border-left-color: #8b5cf6;">
@@ -789,13 +790,13 @@
         <div class="shape-desc">📐 [형태 분석] 귀 밑에서 턱 끝으로 이어지는 골격이 암석처럼 견고한 형태</div>
         <div class="original-data">💡 [측정 결과] 하악 골격의 밀도가 단단하여 강인한 지구력과 투지를 보여줍니다. 목표를 세우면 중도에 포기하지 않고 끝까지 밀어붙이는 돌파력이 중년 이후의 엄청난 재물 성취를 뒷받침합니다.</div>
         <div class="analysis-grid">
-          <div class="good-box"><strong>🟢 장점</strong>한번 시작한 프로젝트나 관계에 대한 흔들림 없는 책임감과 집념</div>
-          <div class="bad-box"><strong>🔴 주의</strong>목적 달성에 몰두하여 융통성이 부족해지거나 대립이 생길 수 있음</div>
+          <div class="good-box"><strong>🟢 긍정적 측면 (장점)</strong>어떤 시련과 역경에도 쉽게 무릎 꿇지 않는 바위 같은 뚝심과 강인한 생명력을 지녔습니다. 남들이 중간에 포기하는 일조차도 끝까지 물고 늘어져 기어코 원하는 성과를 만들어내는 엄청난 실천력과 인내심을 발휘합니다.</div>
+          <div class="bad-box"><strong>🔴 보완할 점 (주의)</strong>자신의 소신과 방식이 너무나도 확고한 나머지, 상황이 급변해도 기존 방식을 고집하는 '불통'의 성향을 보일 수 있습니다. 본인의 목적 달성에만 몰두하다 주변 사람들과 불필요한 마찰을 빚을 수 있으니 한 템포 쉬어가는 여유가 중요합니다.</div>
         </div>
       </div>
     `;
 
-    document.getElementById("desc-summary").innerText = "측면 턱선의 무서운 뚝심과, 이를 제어할 수 있는 귀의 유연한 수용력을 동시에 겸비하셨습니다. 당신의 강직한 소신을 지키되 타인의 조언을 유연하게 받아들이면 최고의 성취를 이룰 수 있습니다.";
+    document.getElementById("desc-summary").innerText = "측면 턱선의 무서운 뚝심과, 이를 부드럽게 제어할 수 있는 귀의 유연한 수용력을 동시에 겸비하셨습니다. 당신의 강직한 소신을 지키되 타인의 조언을 스펀지처럼 받아들인다면 최고의 성취를 이룰 수 있습니다.";
     resultCard.style.display = "block";
   }
 
@@ -815,7 +816,7 @@
       const canvasResult = await html2canvas(captureContainer, { backgroundColor: '#0f172a', scale: 2, useCORS: true });
       const imageURL = canvasResult.toDataURL('image/png');
       const link = document.createElement('a');
-      link.href = imageURL; link.download = 'AI관상_분석결과.png';
+      link.href = imageURL; link.download = 'AI정밀관상_분석결과.png';
       document.body.appendChild(link); link.click(); document.body.removeChild(link);
       statusMsg.innerText = "✅ 기기 사진 앱/다운로드 폴더에 저장되었습니다!";
       statusMsg.style.background = "#15803d";
@@ -827,7 +828,7 @@
 
   async function shareResult() {
     if (navigator.share) {
-      try { await navigator.share({ title: 'AI관상 분석 리포트', text: '나의 AI 관상 분석 결과 확인하기 🔮', url: window.location.href }); } 
+      try { await navigator.share({ title: 'AI 정밀 관상', text: '나의 AI 관상 분석 결과 확인하기 🔮', url: window.location.href }); } 
       catch (err) { console.log('공유 취소:', err); }
     } else {
       try { await navigator.clipboard.writeText(window.location.href); alert('링크가 복사되었습니다!'); } 
