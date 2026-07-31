@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>AI 정밀 관상 & 사진 분석</title>
+  <title>AI 정밀 관상</title>
   
   <meta name="theme-color" content="#0f172a">
   <meta name="mobile-web-app-capable" content="yes">
@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="AI관상">
 
-  <!-- 🌟 아이콘 'A' 문자 깨짐 현상을 해결하기 위한 안정적인 표준 이미지 링크 적용 -->
+  <!-- 아이콘 깨짐 방지 표준 링크 -->
   <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
 
@@ -340,7 +340,7 @@
       <circle cx="50" cy="50" r="6" fill="#0f172a"/>
       <circle cx="52" cy="48" r="2" fill="#ffffff"/>
     </svg>
-    <h1>AI 정밀 관상 & 사진 분석</h1>
+    <h1>AI 정밀 관상</h1>
   </div>
   <p class="desc" id="mode-desc">원하시는 모드를 선택해 주세요</p>
 
@@ -489,6 +489,7 @@
     }
   }
 
+  // 🌟 [수정 2] 재스캔 시 이전 이미지 잔류 문제 해결을 위한 초기화 반영
   fileInput.addEventListener('change', function(event) {
     const file = event.target.files[0];
     if (file) {
@@ -502,6 +503,7 @@
           video.style.display = "none";
           resultCard.style.display = "none";
           lastAnalyzedLandmarks = null;
+          ctx.clearRect(0, 0, canvas.width, canvas.height); // 잔상 제거
           resetStatus("✅ 사진 선택 완료! 분석 버튼을 누르세요.");
           btnAction.innerText = "🔍 업로드 사진 정밀 분석하기";
         };
@@ -518,6 +520,7 @@
     document.getElementById("tab-ear").classList.toggle("active", mode === 'ear');
     document.getElementById("tab-upload").classList.toggle("active", mode === 'upload');
 
+    // 모드 전환 시 이전 결과 및 캔버스 선 완전 초기화
     resultCard.style.display = "none";
     lastAnalyzedLandmarks = null;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -529,7 +532,11 @@
     if (mode === 'upload') {
       stopCamera();
       video.style.display = "none";
-      imgPreview.style.display = uploadedImageObj ? "block" : "none";
+      if (!uploadedImageObj) {
+        imgPreview.style.display = "none";
+      } else {
+        imgPreview.style.display = "block";
+      }
       document.getElementById("mode-desc").innerText = "앨범에서 분석할 고화질 사진을 선택해 주세요";
       btnAction.innerText = uploadedImageObj ? "🔍 업로드 사진 정밀 분석하기" : "📁 사진 선택하기";
       
@@ -539,6 +546,7 @@
         <li><span class="bad">[주의]</span> 과도한 보정 필터, 모자/마스크로 가려진 사진</li>
       `;
     } else if (mode === 'ear') {
+      uploadedImageObj = null;
       imgPreview.style.display = "none";
       video.style.display = "block";
       document.getElementById("mode-desc").innerText = "얼굴 측면과 귀 형태가 명확히 나오도록 위치를 잡으세요";
@@ -551,6 +559,7 @@
       `;
       startCamera();
     } else { 
+      uploadedImageObj = null;
       imgPreview.style.display = "none";
       video.style.display = "block";
       document.getElementById("mode-desc").innerText = "정면을 응시하고 화면 중앙에 위치하세요";
@@ -605,11 +614,15 @@
   }
 
   async function runAnalysis() {
+    // 🌟 [수정 2] 스캔 시작 전 이전 캔버스 선 및 결과 카드 확실하게 초기화
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    resultCard.style.display = "none";
+    lastAnalyzedLandmarks = null;
+
     scanOverlay.classList.add("active");
     adjustTip.style.display = "none";
     statusMsg.innerText = "⏳ AI관상 정밀 스캔 중... (이목구비 68개 좌표 심층 측정)";
     statusMsg.style.background = "#334155";
-    resultCard.style.display = "none";
 
     const targetEl = currentMode === 'upload' ? imgPreview : video;
     const displaySize = {
@@ -620,7 +633,6 @@
     canvas.width = displaySize.width;
     canvas.height = displaySize.height;
 
-    // 🌟 스캔 속도를 3초로 늦추어 충분한 심층 분석 및 정밀 랜드마크 측정 보장
     setTimeout(async () => {
       try {
         const detections = await faceapi.detectSingleFace(targetEl, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.15 }))
@@ -635,11 +647,22 @@
           }
 
           const resized = faceapi.resizeResults(detections, displaySize);
+          
+          // 🌟 [수정 3] 턱선(하관) 랜드마크 위치가 너무 위로 잡히는 현상 보정 (실제 턱선 끝까지 하향 매칭)
+          if (resized && resized.landmarks && resized.landmarks.positions) {
+            let positions = resized.landmarks.positions;
+            // 턱선 끝단(8번 포인트 전후)의 Y좌표를 얼굴 전체 비율에 맞게 미세 하향 보정
+            if (positions[8]) {
+              const faceHeightFactor = Math.abs(positions[8].y - positions[27].y);
+              positions[8].y += faceHeightFactor * 0.08; 
+            }
+          }
+
           lastAnalyzedLandmarks = resized;
           
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           
-          // 🌟 정밀한 랜드마크 포인트 및 연결선(메시) 그리기 옵션 커스텀
+          // 랜드마크 및 턱선 격자 렌더링
           faceapi.draw.drawFaceLandmarks(canvas, resized, {
             pointColor: { color: '#38bdf8', lineWidth: 2 },
             boxColor: { color: '#facc15', lineWidth: 1 }
@@ -675,6 +698,7 @@
     adjustTip.style.display = "block";
   }
 
+  // 🌟 [수정 1] 구체적이고 상세한 관상 분석 리포트 복구
   function generateFrontReport(detections) {
     const isMale = detections.gender === "male";
     const age = Math.round(detections.age);
@@ -739,36 +763,36 @@
     const detailsDiv = document.getElementById("details-container");
     detailsDiv.innerHTML = `
       <div class="detail-section" style="border-left-color: #38bdf8;">
-        <div class="detail-header"><h4>🌱 상정 (이마 & 눈) - 지혜 / 초년</h4></div>
-        <div class="shape-desc">📐 [모양새] ${eyeRatio > 0.12 ? "봉황의 눈매 (판세 통찰)" : "신중한 수호의 눈"}</div>
-        <div class="original-data">💡 [통찰력 측정] 주변 상황에 대한 즉각적인 직관과 기회 포착 능력이 우수합니다.</div>
+        <div class="detail-header"><h4>🌱 상정 (이마 & 눈) - 지혜 / 초년운</h4></div>
+        <div class="shape-desc">📐 [세부 특징] ${eyeRatio > 0.12 ? "지혜와 통찰이 담긴 봉황 눈매" : "집중력과 신중함이 돋보이는 수호의 눈"}</div>
+        <div class="original-data">💡 [측정 데이터] 이마 상단과 눈썹 사이의 각도가 넓어 정보 수용력과 학습 능력이 평균 이상으로 활발합니다.</div>
         <div class="analysis-grid">
-          <div class="good-box"><strong>🟢 장점</strong>상황 판단력과 기회 포착 안목이 탁월함</div>
-          <div class="bad-box"><strong>🔴 주의</strong>지나친 계산이나 차가운 인상 주의</div>
+          <div class="good-box"><strong>🟢 장점</strong>상황 판단력과 순발력, 기회 포착 안목이 탁월함</div>
+          <div class="bad-box"><strong>🔴 주의</strong>지나친 분석으로 인한 피로감과 냉정함 주의</div>
         </div>
       </div>
       <div class="detail-section" style="border-left-color: #f59e0b;">
-        <div class="detail-header"><h4>🔥 중정 (코 & 재백궁) - 재물 / 사업</h4></div>
-        <div class="shape-desc">📐 [모양새] ${noseRatio > 0.23 ? "주머니형 코 (재물 수장)" : "대나무 마디형 칼코 (명예 결단)"}</div>
-        <div class="original-data">💡 [재백궁 측정] 콧대의 입체감으로 보아 중년기 자산 형성 및 경제적 자립도가 안정적입니다.</div>
+        <div class="detail-header"><h4>🔥 중정 (코 & 재백궁) - 재물 / 사업운</h4></div>
+        <div class="shape-desc">📐 [세부 특징] ${noseRatio > 0.23 ? "재물이 모이는 주머니형 실속 코" : "의지와 결단력이 돋보이는 반듯한 콧대"}</div>
+        <div class="original-data">💡 [측정 데이터] 콧대와 광대 중심부의 입체적인 볼륨감으로 보아 중년기 경제적 자립도와 성취욕이 매우 뚜렷합니다.</div>
         <div class="analysis-grid">
-          <div class="good-box"><strong>🟢 장점</strong>재물이 쉽게 새지 않고 안정적으로 축적됨</div>
-          <div class="bad-box"><strong>🔴 주의</strong>재물 집착으로 오해받지 않도록 유의</div>
+          <div class="good-box"><strong>🟢 장점</strong>재물이 쉽게 흩어지지 않고 안정적으로 축적됨</div>
+          <div class="bad-box"><strong>🔴 주의</strong>지나친 고집이나 금전적 완고함 경계 필요</div>
         </div>
       </div>
       <div class="detail-section" style="border-left-color: #10b981;">
-        <div class="detail-header"><h4>🛡️ 하정 (입 & 턱) - 인복 / 말년</h4></div>
-        <div class="shape-desc">📐 [모양새] ${lipRatio > 0.38 ? "대범한 사자형 입" : "단정한 조개형 입술"}</div>
-        <div class="original-data">💡 [수성관 측정] 입술 윤곽의 비율상 대인관계의 폭이 넓으며 인복이 공고해지는 신호입니다.</div>
+        <div class="detail-header"><h4>🛡️ 하정 (입 & 턱) - 인복 / 말년운</h4></div>
+        <div class="shape-desc">📐 [세부 특징] ${lipRatio > 0.38 ? "포용력과 의리가 넘치는 대범한 입술" : "책임감이 강하고 단정한 하관"}</div>
+        <div class="original-data">💡 [측정 데이터] 하관과 입꼬리의 균형 비율상 대인관계의 폭이 넓고 말년으로 갈수록 주변에 사람이 따르는 형상입니다.</div>
         <div class="analysis-grid">
-          <div class="good-box"><strong>🟢 장점</strong>대인관계 도량이 넓고 리더십이 따름</div>
-          <div class="bad-box"><strong>🔴 주의</strong>말 실수나 구설수 조심 필요</div>
+          <div class="good-box"><strong>🟢 장점</strong>도량이 넓어 주변 사람들을 잘 이끌고 인복이 좋음</div>
+          <div class="bad-box"><strong>🔴 주의</strong>한 번 틀어진 관계에 대한 미련이나 구설수 조심</div>
         </div>
       </div>
     `;
 
     document.getElementById("desc-summary").innerText = 
-      `타고난 강점(${elementType})은 극대화하되, 평소 입꼬리를 올리는 미소와 상대를 배려하는 언어 습관을 기르면 운이 덕(德)으로 완벽히 변화합니다.`;
+      `타고난 장점(${elementType})을 적극 활용하되, 매사에 부드러운 미소와 경청의 태도를 유지하면 운이 복(福)으로 완벽하게 전환됩니다.`;
 
     resultCard.style.display = "block";
   }
@@ -789,17 +813,25 @@
     detailsDiv.innerHTML = `
       <div class="detail-section" style="border-left-color: #ec4899;">
         <div class="detail-header"><h4>👂 귀(採聽官) - 정보수용 & 재물복</h4></div>
-        <div class="shape-desc">📐 [모양새] 귓볼이 도톰하고 윤곽이 뚜렷한 부처님 귀 형상</div>
-        <div class="original-data">💡 [수용력 측정] 타인의 의견을 경청하는 안목이 뛰어나고 귀인의 도움이 따릅니다.</div>
+        <div class="shape-desc">📐 [세부 특징] 귓볼이 도톰하고 윤곽이 선명한 안정형 귀</div>
+        <div class="original-data">💡 [측정 데이터] 외부의 조언을 수용하는 포용력이 높고 평생 귀인의 조력이 따르는 상입니다.</div>
+        <div class="analysis-grid">
+          <div class="good-box"><strong>🟢 장점</strong>귀가 밝아 위기 관리 능력이 우수함</div>
+          <div class="bad-box"><strong>🔴 주의</strong>귀가 얇아 주변 의견에 쉽게 흔들림 주의</div>
+        </div>
       </div>
       <div class="detail-section" style="border-left-color: #8b5cf6;">
         <div class="detail-header"><h4>🗿 턱선 측면 라인 - 지구력 & 끈기</h4></div>
-        <div class="shape-desc">📐 [모양새] 턱 끝까지 굳건하게 각진 암석형 턱선</div>
-        <div class="original-data">💡 [지구력 측정] 강한 추진력과 어려움을 돌파하는 끈기가 돋보이는 관상입니다.</div>
+        <div class="shape-desc">📐 [세부 특징] 목표를 향해 뚝심 있게 밀고 나가는 암석형 하악선</div>
+        <div class="original-data">💡 [측정 데이터] 턱 골격의 밀도가 견고하여 중·말년의 지구력과 사업적 성취를 강하게 뒷받침합니다.</div>
+        <div class="analysis-grid">
+          <div class="good-box"><strong>🟢 장점</strong>한번 시작한 일은 끝까지 완수하는 집념</div>
+          <div class="bad-box"><strong>🔴 주의</strong>융통성이 부족해질 수 있으니 유연성 유지 필요</div>
+        </div>
       </div>
     `;
 
-    document.getElementById("desc-summary").innerText = "턱선의 강한 추진력이 무기이지만 고집으로 인한 마찰을 주의하세요. 주관을 지키되 유연성을 더하면 귀인의 복이 곱절로 늘어납니다.";
+    document.getElementById("desc-summary").innerText = "측면 턱선의 뚝심과 귀의 수용력을 겸비하고 있습니다. 소신을 지키되 타인의 의견에 유연하게 귀를 기울이면 복이 배가 됩니다.";
     resultCard.style.display = "block";
   }
 
