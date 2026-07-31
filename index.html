@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <!-- face-api.js 라이브러리 -->
-  <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -36,7 +36,7 @@
     h1 { font-size: 1.4rem; margin-bottom: 4px; color: #facc15; }
     p.desc { font-size: 0.8rem; color: #94a3b8; margin-bottom: 12px; }
 
-    /* 1. 상단 모드 탭 */
+    /* 모드 탭 */
     .mode-selector {
       display: flex;
       gap: 4px;
@@ -64,7 +64,7 @@
       font-weight: bold;
     }
 
-    /* 3. 사진 가이드 문구 박스 */
+    /* 가이드 박스 */
     .guide-box {
       background: #0f172a;
       border: 1px dashed #6366f1;
@@ -81,7 +81,6 @@
       margin-bottom: 4px;
     }
     .guide-box ul { list-style: none; padding-left: 0; }
-    .guide-box li { margin-bottom: 2px; }
     .good { color: #4ade80; font-weight: bold; }
     .bad { color: #f87171; font-weight: bold; }
     
@@ -97,7 +96,6 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
     }
 
     .video-wrapper {
@@ -161,7 +159,6 @@
       width: 100%;
       box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
     }
-    .main-btn:disabled { background: #475569; opacity: 0.6; cursor: not-allowed; }
 
     .result-card {
       margin-top: 15px;
@@ -215,19 +212,17 @@
   <h1>🔮 AI 관상 & 사진 분석</h1>
   <p class="desc" id="mode-desc">모드를 선택해 주세요</p>
 
-  <!-- 1. 상단 모드 탭 -->
   <div class="mode-selector">
     <button class="mode-btn active" id="tab-front" onclick="switchMode('front')">👤 카메라 정면</button>
     <button class="mode-btn" id="tab-ear" onclick="switchMode('ear')">👂 카메라 측면/귀</button>
     <button class="mode-btn" id="tab-upload" onclick="switchMode('upload')">📁 사진 파일 업로드</button>
   </div>
 
-  <!-- 3. 권장 사진 상태 가이드 -->
   <div class="guide-box">
-    <div class="guide-title">📌 올릴 사진 / 스캔 가이드 문구</div>
+    <div class="guide-title">📌 올릴 사진 / 스캔 가이드</div>
     <ul>
-      <li><span class="good">[권장]</span> 정면 시선, 밝은 조명, 이마/눈/코/입이 명확히 보이는 사진</li>
-      <li><span class="bad">[주의]</span> 모자/마스크/선글라스, 과도한 보정 필터, 어두운 조명, 숙인 각도</li>
+      <li><span class="good">[권장]</span> 정면 시선, 밝은 조명, 이마/눈/코/입이 분명한 사진</li>
+      <li><span class="bad">[주의]</span> 모자/마스크 착용, 과도한 보정 필터, 어두운 장소</li>
     </ul>
   </div>
 
@@ -243,8 +238,8 @@
     </div>
   </div>
 
-  <!-- 파일 업로드 인풋 (숨김) -->
-  <input type="file" id="file-input" accept="image/*" style="display: none;" onchange="onFileSelected(event)">
+  <!-- 파일 선택 인풋 (독립 동작) -->
+  <input type="file" id="file-input" accept="image/*" style="display: none;">
 
   <div id="action-area">
     <button id="btn-action" class="main-btn" onclick="handleActionClick()">📸 정면 관상 스캔하기</button>
@@ -305,7 +300,34 @@
   let mediaStream = null;
   let uploadedImageObj = null;
 
-  // 모드 전환
+  // 1. 파일 선택 이벤트 직접 바인딩 (AI 모델 로딩 여부와 관계없이 작동)
+  fileInput.addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          uploadedImageObj = img;
+          imgPreview.src = e.target.result;
+          imgPreview.style.display = "block";
+          video.style.display = "none";
+          
+          btnAction.innerText = "🔍 업로드 사진 관상 분석하기";
+          if (isModelLoaded) {
+            statusMsg.innerText = "✅ 사진 준비 완료! 분석 버튼을 누르세요.";
+            statusMsg.style.background = "#15803d";
+          } else {
+            statusMsg.innerText = "⏳ 사진 준비 완료 (AI 모델 로딩 완료 후 분석 가능)";
+          }
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  // 2. 모드 전환
   function switchMode(mode) {
     currentMode = mode;
     document.getElementById("tab-front").classList.toggle("active", mode === 'front');
@@ -322,7 +344,6 @@
       document.getElementById("mode-desc").innerText = "앨범에서 관상을 볼 사진을 선택하세요";
       
       btnAction.innerText = uploadedImageObj ? "🔍 업로드 사진 관상 분석하기" : "📁 사진 선택하기";
-      btnAction.disabled = false;
     } else {
       imgPreview.style.display = "none";
       video.style.display = "block";
@@ -332,7 +353,7 @@
     }
   }
 
-  // 카메라 작동 로직
+  // 3. 카메라 작동
   async function startCamera() {
     if (currentMode === 'upload') return;
     stopCamera();
@@ -345,8 +366,8 @@
       video.srcObject = mediaStream;
       await video.play();
     } catch (err) {
-      console.warn("카메라 접근 불가:", err);
-      statusMsg.innerText = "⚠️ 카메라 접근 차단됨 (사진 업로드 모드를 이용하세요)";
+      console.warn("카메라 권한 거부 또는 사용 불가:", err);
+      statusMsg.innerText = "⚠️ 카메라 접근 실패 (사진 업로드 모드를 사용하세요)";
       statusMsg.style.background = "#b91c1c";
     }
   }
@@ -358,45 +379,25 @@
     }
   }
 
-  // 파일 클릭 및 스캔 이벤트 처리
+  // 4. 버튼 클릭 핸들러
   function handleActionClick() {
     if (currentMode === 'upload' && !uploadedImageObj) {
       fileInput.click();
       return;
     }
+
     if (!isModelLoaded) {
-      alert("AI 로딩 중입니다. 잠시만 기다려주세요.");
+      alert("AI 모델을 다운로드 중입니다. 잠시만 기다린 후 다시 시도해 주세요.");
       return;
     }
+
     runAnalysis();
   }
 
-  function onFileSelected(event) {
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const img = new Image();
-        img.onload = function() {
-          uploadedImageObj = img;
-          imgPreview.src = e.target.result;
-          imgPreview.style.display = "block";
-          video.style.display = "none";
-          
-          btnAction.innerText = "🔍 업로드 사진 관상 분석하기";
-          statusMsg.innerText = "✅ 사진 준비 완료! 분석 버튼을 누르세요.";
-          statusMsg.style.background = "#15803d";
-        };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-  }
-
-  // AI 관상 분석 실행
+  // 5. AI 관상 분석 실행
   async function runAnalysis() {
     scanOverlay.classList.add("active");
-    statusMsg.innerText = "⏳ 얼굴 랜드마크 분석 중...";
+    statusMsg.innerText = "⏳ 얼굴 랜드마크 및 특징 분석 중...";
     statusMsg.style.background = "#334155";
     resultCard.style.display = "none";
 
@@ -425,13 +426,13 @@
         statusMsg.innerText = "✅ 관상 분석 완료!";
         statusMsg.style.background = "#15803d";
       } else {
-        statusMsg.innerText = "⚠️ 얼굴을 찾지 못했습니다. 가이드를 확인하세요.";
+        statusMsg.innerText = "⚠️ 얼굴을 감지하지 못했습니다. 가이드를 참고하세요.";
         statusMsg.style.background = "#b91c1c";
       }
     } catch (e) {
       console.error(e);
       scanOverlay.classList.remove("active");
-      statusMsg.innerText = "❌ 분석 실패 (사진 상태를 확인하세요)";
+      statusMsg.innerText = "❌ 분석 중 오류 발생 (다른 사진으로 시도해 보세요)";
       statusMsg.style.background = "#b91c1c";
     }
   }
@@ -479,13 +480,13 @@
     resultCard.style.display = "block";
   }
 
-  // 수정된 올바른 AI 모델 경로 로딩
-  async function init() {
+  // 6. 안정적인 CDN 기반 AI 모델 초기화
+  async function initAI() {
     try {
-      // GitHub의 공식 weights 디렉토리 고정 경로 사용
-      const MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights';
+      // jsDelivr CDN 경로 사용 (CORS 에러 완벽 해결)
+      const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
       
-      statusMsg.innerText = "⏳ AI 관상 모델을 네트워크에서 받아오는 중...";
+      statusMsg.innerText = "⏳ AI 관상 모델 다운로드 중...";
 
       await Promise.all([
         faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
@@ -494,18 +495,21 @@
       ]);
 
       isModelLoaded = true;
-      statusMsg.innerText = "✅ AI 모델 로딩 완료!";
+      statusMsg.innerText = "✅ AI 모델 준비 완료!";
       statusMsg.style.background = "#15803d";
       
-      startCamera();
+      if (currentMode !== 'upload') {
+        startCamera();
+      }
     } catch (e) {
       console.error(e);
-      statusMsg.innerText = "⚠️ 외부 모델 로딩 지연 중 (사진 업로드는 이용 가능)";
+      statusMsg.innerText = "⚠️ AI 모델 다운로드 실패 (네트워크 연결을 확인하세요)";
       statusMsg.style.background = "#b91c1c";
     }
   }
 
-  window.addEventListener("load", init);
+  // 페이지 로드 시 AI 초기화 실행
+  window.addEventListener("DOMContentLoaded", initAI);
 </script>
 
 </body>
