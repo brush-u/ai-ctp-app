@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>🔮 AI 정밀 관상 & 사진 분석</title>
+  <title>🔮 AI 관상 & 사진 분석</title>
   
   <meta name="theme-color" content="#0f172a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
+  <!-- face-api.js 라이브러리 -->
   <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.js"></script>
 
   <style>
@@ -230,7 +231,7 @@
     </ul>
   </div>
 
-  <div id="status" class="status-msg">⏳ AI 분석 모델을 로딩 중입니다...</div>
+  <div id="status" class="status-msg">⏳ AI 모델 준비 중...</div>
 
   <div class="video-wrapper">
     <video id="webcam" autoplay playsinline muted></video>
@@ -246,7 +247,7 @@
   <input type="file" id="file-input" accept="image/*" style="display: none;" onchange="onFileSelected(event)">
 
   <div id="action-area">
-    <button id="btn-action" class="main-btn" onclick="handleActionClick()" disabled>AI 모델 로딩 중...</button>
+    <button id="btn-action" class="main-btn" onclick="handleActionClick()">📸 정면 관상 스캔하기</button>
   </div>
 
   <div id="result" class="result-card">
@@ -304,7 +305,7 @@
   let mediaStream = null;
   let uploadedImageObj = null;
 
-  // 1. 모드 전환
+  // 모드 전환
   function switchMode(mode) {
     currentMode = mode;
     document.getElementById("tab-front").classList.toggle("active", mode === 'front');
@@ -320,13 +321,8 @@
       imgPreview.style.display = uploadedImageObj ? "block" : "none";
       document.getElementById("mode-desc").innerText = "앨범에서 관상을 볼 사진을 선택하세요";
       
-      if (!uploadedImageObj) {
-        btnAction.innerText = "📁 사진 선택하기";
-        btnAction.disabled = !isModelLoaded;
-      } else {
-        btnAction.innerText = "🔍 업로드 사진 관상 분석하기";
-        btnAction.disabled = !isModelLoaded;
-      }
+      btnAction.innerText = uploadedImageObj ? "🔍 업로드 사진 관상 분석하기" : "📁 사진 선택하기";
+      btnAction.disabled = false;
     } else {
       imgPreview.style.display = "none";
       video.style.display = "block";
@@ -336,31 +332,22 @@
     }
   }
 
-  // 카메라 시작 (휴대폰 바탕화면 PWA 호환성 보장)
+  // 카메라 작동 로직
   async function startCamera() {
     if (currentMode === 'upload') return;
     stopCamera();
 
     try {
-      // 보편적인 카메라 권한 옵션 적용
       mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user" },
         audio: false
       });
       video.srcObject = mediaStream;
       await video.play();
-      if (isModelLoaded) btnAction.disabled = false;
     } catch (err) {
-      console.warn("기본 카메라 실패, 기본 설정으로 재시도:", err);
-      try {
-        mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        video.srcObject = mediaStream;
-        await video.play();
-        if (isModelLoaded) btnAction.disabled = false;
-      } catch (err2) {
-        statusMsg.innerText = "⚠️ 카메라는 업로드 모드만 작동 가능합니다.";
-        statusMsg.style.background = "#b91c1c";
-      }
+      console.warn("카메라 접근 불가:", err);
+      statusMsg.innerText = "⚠️ 카메라 접근 차단됨 (사진 업로드 모드를 이용하세요)";
+      statusMsg.style.background = "#b91c1c";
     }
   }
 
@@ -371,10 +358,14 @@
     }
   }
 
-  // 2. 파일 업로드 처리
+  // 파일 클릭 및 스캔 이벤트 처리
   function handleActionClick() {
     if (currentMode === 'upload' && !uploadedImageObj) {
       fileInput.click();
+      return;
+    }
+    if (!isModelLoaded) {
+      alert("AI 로딩 중입니다. 잠시만 기다려주세요.");
       return;
     }
     runAnalysis();
@@ -393,8 +384,7 @@
           video.style.display = "none";
           
           btnAction.innerText = "🔍 업로드 사진 관상 분석하기";
-          btnAction.disabled = false;
-          statusMsg.innerText = "✅ 사진 로드 완료! 분석 버튼을 누르세요.";
+          statusMsg.innerText = "✅ 사진 준비 완료! 분석 버튼을 누르세요.";
           statusMsg.style.background = "#15803d";
         };
         img.src = e.target.result;
@@ -403,10 +393,8 @@
     }
   }
 
-  // AI 분석 로직
+  // AI 관상 분석 실행
   async function runAnalysis() {
-    if (!isModelLoaded) return;
-    btnAction.disabled = true;
     scanOverlay.classList.add("active");
     statusMsg.innerText = "⏳ 얼굴 랜드마크 분석 중...";
     statusMsg.style.background = "#334155";
@@ -422,7 +410,7 @@
     canvas.height = displaySize.height;
 
     try {
-      const detections = await faceapi.detectSingleFace(targetEl, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.2 }))
+      const detections = await faceapi.detectSingleFace(targetEl, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.15 }))
                                       .withFaceLandmarks()
                                       .withAgeAndGender();
 
@@ -434,20 +422,18 @@
         faceapi.draw.drawFaceLandmarks(canvas, resized);
 
         showResults(resized);
-        statusMsg.innerText = "✅ 관상 분석이 완료되었습니다!";
+        statusMsg.innerText = "✅ 관상 분석 완료!";
         statusMsg.style.background = "#15803d";
       } else {
-        statusMsg.innerText = "⚠️ 얼굴을 감지하지 못했습니다. 가이드를 확인해 주세요.";
+        statusMsg.innerText = "⚠️ 얼굴을 찾지 못했습니다. 가이드를 확인하세요.";
         statusMsg.style.background = "#b91c1c";
       }
     } catch (e) {
       console.error(e);
       scanOverlay.classList.remove("active");
-      statusMsg.innerText = "❌ 분석 중 오류가 발생했습니다.";
+      statusMsg.innerText = "❌ 분석 실패 (사진 상태를 확인하세요)";
       statusMsg.style.background = "#b91c1c";
     }
-
-    btnAction.disabled = false;
   }
 
   function showResults(detections) {
@@ -493,22 +479,28 @@
     resultCard.style.display = "block";
   }
 
-  // 초기 모델 로딩
+  // 수정된 올바른 AI 모델 경로 로딩
   async function init() {
     try {
-      const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/';
-      await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
-      await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-      await faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL);
+      // GitHub의 공식 weights 디렉토리 고정 경로 사용
+      const MODEL_URL = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights';
+      
+      statusMsg.innerText = "⏳ AI 관상 모델을 네트워크에서 받아오는 중...";
+
+      await Promise.all([
+        faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
+        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+        faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL)
+      ]);
 
       isModelLoaded = true;
-      statusMsg.innerText = "✅ AI 모델 준비 완료! 스캔을 시작하세요.";
+      statusMsg.innerText = "✅ AI 모델 로딩 완료!";
       statusMsg.style.background = "#15803d";
       
       startCamera();
     } catch (e) {
       console.error(e);
-      statusMsg.innerText = "⚠️ AI 모델 로딩 실패. 네트워크를 확인해 주세요.";
+      statusMsg.innerText = "⚠️ 외부 모델 로딩 지연 중 (사진 업로드는 이용 가능)";
       statusMsg.style.background = "#b91c1c";
     }
   }
