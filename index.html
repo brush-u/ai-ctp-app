@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>🔮 정밀 AI 관상 & 사진 분석</title>
+  <title>🔮 AI 정밀 관상</title>
   
   <meta name="theme-color" content="#0f172a">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -98,6 +98,7 @@
       justify-content: center;
     }
 
+    /* 비디오/이미지 뷰포트 */
     .video-wrapper {
       position: relative;
       width: 100%;
@@ -117,15 +118,19 @@
       top: 0; left: 0;
       width: 100%; height: 100%;
       object-fit: cover;
+      z-index: 1;
     }
+
     canvas {
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
       pointer-events: none;
-      z-index: 5;
+      z-index: 2;
+      background: transparent;
     }
 
+    /* 스캔 레이저 레이어 (오르락내리락 애니메이션) */
     .scan-overlay {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -138,7 +143,7 @@
       position: absolute;
       top: 0; left: 0; width: 100%; height: 4px;
       background: linear-gradient(90deg, transparent, #ef4444, #facc15, #ef4444, transparent);
-      box-shadow: 0 0 15px #ef4444;
+      box-shadow: 0 0 15px #ef4444, 0 0 25px #facc15;
       animation: scan-move 1.5s linear infinite;
     }
     @keyframes scan-move {
@@ -160,7 +165,7 @@
       box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
     }
 
-    /* 결과 리포트 스타일 */
+    /* 결과 카드 */
     .result-card {
       margin-top: 15px;
       background: #0f172a;
@@ -184,6 +189,7 @@
     .profile-item .label { font-size: 0.68rem; color: #c084fc; display: block; }
     .profile-item .val { font-size: 0.95rem; font-weight: bold; color: #ffffff; margin-top: 2px; }
 
+    /* 닮은꼴 연예인 카쿠 */
     .celeb-box {
       background: linear-gradient(135deg, #312e81, #1e1b4b);
       border: 1px solid #6366f1;
@@ -193,7 +199,7 @@
       text-align: center;
     }
     .celeb-box h4 { color: #38bdf8; font-size: 0.8rem; margin-bottom: 4px; }
-    .celeb-box .celeb-name { font-size: 1.1rem; font-weight: bold; color: #facc15; }
+    .celeb-box .celeb-name { font-size: 1.15rem; font-weight: bold; color: #facc15; }
 
     .ratios {
       display: flex;
@@ -215,7 +221,7 @@
       margin-bottom: 10px;
       border-left: 4px solid #6366f1;
     }
-    .detail-section h4 { color: #facc15; font-size: 0.85rem; margin-bottom: 4px; display: flex; justify-content: space-between; }
+    .detail-section h4 { color: #facc15; font-size: 0.85rem; margin-bottom: 4px; }
     .detail-section p { font-size: 0.78rem; line-height: 1.45; color: #e2e8f0; }
   </style>
 </head>
@@ -246,6 +252,7 @@
     <img id="uploaded-preview" class="uploaded-img" style="display: none;" alt="업로드 이미지">
     <canvas id="output_canvas"></canvas>
 
+    <!-- 오르락내리락 스캔 레이저 -->
     <div id="scan-overlay" class="scan-overlay">
       <div class="scan-line"></div>
     </div>
@@ -318,7 +325,7 @@
   let mediaStream = null;
   let uploadedImageObj = null;
 
-  // 연예인 데이터베이스 (관상 및 성별/나이대별 매칭 데이터)
+  // 연예인 데이터베이스
   const CELEB_DB = {
     male: {
       top: ["송중기", "박보검", "임시완", "차은우"],
@@ -344,10 +351,11 @@
           imgPreview.src = e.target.result;
           imgPreview.style.display = "block";
           video.style.display = "none";
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
           
           btnAction.innerText = "🔍 업로드 사진 관상 분석하기";
           if (isModelLoaded) {
-            statusMsg.innerText = "✅ 사진 준비 완료! 아래 스캔 버튼을 누르세요.";
+            statusMsg.innerText = "✅ 사진 선택 완료! 분석 버튼을 누르세요.";
             statusMsg.style.background = "#15803d";
           } else {
             statusMsg.innerText = "⏳ 사진 준비 완료 (AI 모델 다운로드 완료 후 스캔 가능)";
@@ -418,15 +426,16 @@
     }
 
     if (!isModelLoaded) {
-      alert("AI 모델 다운로드가 아직 완료되지 않았습니다. 잠시만 기다려주세요.");
+      alert("AI 모델 다운로드가 진행 중입니다. 완료될 때까지 잠시만 기다려주세요.");
       return;
     }
 
     runAnalysis();
   }
 
-  // 5. 정밀 분석 로직
+  // 5. 정밀 분석 로직 실행
   async function runAnalysis() {
+    // 오르락내리락 스캔 라인 활성화
     scanOverlay.classList.add("active");
     statusMsg.innerText = "⏳ 스캔 중... 이목구비 랜드마크 분석 및 정밀 계산 중";
     statusMsg.style.background = "#334155";
@@ -441,36 +450,38 @@
     canvas.width = displaySize.width;
     canvas.height = displaySize.height;
 
-    try {
-      const detections = await faceapi.detectSingleFace(targetEl, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.15 }))
-                                      .withFaceLandmarks()
-                                      .withAgeAndGender();
+    // 스캔 애니메이션을 2초간 시각적으로 보여준 후 분석 완료
+    setTimeout(async () => {
+      try {
+        const detections = await faceapi.detectSingleFace(targetEl, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.15 }))
+                                        .withFaceLandmarks()
+                                        .withAgeAndGender();
 
-      scanOverlay.classList.remove("active");
+        scanOverlay.classList.remove("active");
 
-      if (detections) {
-        const resized = faceapi.resizeResults(detections, displaySize);
-        
-        // 원본 영상/이미지캔버스에 랜드마크를 표시할 때 이미지 복사 유지
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        faceapi.draw.drawFaceLandmarks(canvas, resized);
+        if (detections) {
+          const resized = faceapi.resizeResults(detections, displaySize);
+          
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          faceapi.draw.drawFaceLandmarks(canvas, resized);
 
-        generateFullReport(resized);
-        statusMsg.innerText = "✅ 관상 분석이 완료되었습니다!";
-        statusMsg.style.background = "#15803d";
-      } else {
-        statusMsg.innerText = "⚠️ 얼굴을 인식하지 못했습니다. 밝은 곳에서 정면 사진으로 다시 시도해 주세요.";
+          generateFullReport(resized);
+          statusMsg.innerText = "✅ 관상 분석이 완료되었습니다!";
+          statusMsg.style.background = "#15803d";
+        } else {
+          statusMsg.innerText = "⚠️ 얼굴을 인식하지 못했습니다. 밝은 곳에서 정면 사진으로 다시 시도해 주세요.";
+          statusMsg.style.background = "#b91c1c";
+        }
+      } catch (e) {
+        console.error(e);
+        scanOverlay.classList.remove("active");
+        statusMsg.innerText = "❌ 분석 중 오류가 발생했습니다.";
         statusMsg.style.background = "#b91c1c";
       }
-    } catch (e) {
-      console.error(e);
-      scanOverlay.classList.remove("active");
-      statusMsg.innerText = "❌ 분석 중 오류가 발생했습니다.";
-      statusMsg.style.background = "#b91c1c";
-    }
+    }, 1500);
   }
 
-  // 6. 상세 리포트 생성 함수
+  // 6. 상세 리포트 및 연예인 데이터 생성
   function generateFullReport(detections) {
     const isMale = detections.gender === "male";
     const age = Math.round(detections.age);
@@ -479,8 +490,8 @@
     document.getElementById("res-gender").innerText = isMale ? "남성 ♂️" : "여성 ♀️";
     document.getElementById("res-age").innerText = `약 ${age}세`;
 
-    // 삼정(三庭) 측정 로직
-    const topY = pos[21].y; // 눈썹 선
+    // 삼정(三庭) 정밀 측정
+    const topY = pos[21].y; // 눈썹
     const midY = pos[33].y; // 코 끝
     const botY = pos[8].y;  // 턱 끝
 
@@ -523,10 +534,10 @@
       document.getElementById("desc-bot").innerText = "하관과 턱선의 지지력이 강력하여 나이가 들수록 재산과 인복이 쌓이며, 자손 덕이 크게 나타나는 전형적인 만복(萬福)의 관상입니다.";
     }
 
-    // 닮은꼴 연예인 난수 선택
+    // 닮은꼴 연예인 랜덤 선택
     const randomCeleb = celebList[Math.floor(Math.random() * celebList.length)];
     document.getElementById("res-element").innerText = elementType;
-    document.getElementById("res-celeb").innerText = `${randomCeleb} (${Math.floor(Math.random()*12 + 83)}% 유사)`;
+    document.getElementById("res-celeb").innerText = `${randomCeleb} (${Math.floor(Math.random()*12 + 84)}% 유사)`;
 
     document.getElementById("desc-summary").innerText = 
       `전반적으로 이목구비의 균형이 조화롭고 ${elementType.split(' - ')[0]}의 기운이 잘 서려 있습니다. 본인의 강점인 ${tPct >= mPct ? '지혜와 기획력' : (mPct >= bPct ? '추진력과 재물 감각' : '인복과 리더십')}을 적극 활용하시기 바랍니다.`;
@@ -534,11 +545,11 @@
     resultCard.style.display = "block";
   }
 
-  // 7. AI 모델 안정 초기화
+  // 7. AI 모델 초기화
   async function initAI() {
     try {
       const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
-      statusMsg.innerText = "⏳ 관상 분석 AI 신경망 로딩 중...";
+      statusMsg.innerText = "⏳ AI 관상 신경망 로딩 중...";
 
       await Promise.all([
         faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),
