@@ -112,7 +112,6 @@
       line-height: 1.3;
     }
 
-    /* 🌟 영상 왜곡 및 좌표 오차 원천 차단 (컨테이너에 영상 비율 맞춤) */
     .video-wrapper {
       position: relative;
       width: 100%;
@@ -613,7 +612,6 @@
 
     const targetEl = currentMode === 'upload' ? imgPreview : video;
     
-    // 🌟 비디오/이미지의 실제 네이티브 픽셀 크기를 캔버스 해상도에 1:1로 직접 장착
     const w = targetEl.videoWidth || targetEl.naturalWidth || targetEl.clientWidth || 640;
     const h = targetEl.videoHeight || targetEl.naturalHeight || targetEl.clientHeight || 480;
 
@@ -801,6 +799,7 @@
     
     statusMsg.innerText = "⏳ 캡처 및 이미지 저장 중...";
     try {
+      // 🌟 [수정 완료] 저장 시 캔버스에 점/선이 확실하게 렌더링되어 있도록 보장
       if (lastAnalyzedLandmarks) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         faceapi.draw.drawFaceLandmarks(canvas, lastAnalyzedLandmarks, {
@@ -808,11 +807,29 @@
           boxColor: { color: '#facc15', lineWidth: 2 }
         });
       }
+
+      // html2canvas로 컨테이너 전체 캡처
       const canvasResult = await html2canvas(captureContainer, { backgroundColor: '#0f172a', scale: 2, useCORS: true });
       const imageURL = canvasResult.toDataURL('image/png');
       const link = document.createElement('a');
-      link.href = imageURL; link.download = 'AI정밀관상_분석결과.png';
-      document.body.appendChild(link); link.click(); document.body.removeChild(link);
+      link.href = imageURL; 
+      link.download = 'AI정밀관상_분석결과.png';
+      document.body.appendChild(link); 
+      link.click(); 
+      document.body.removeChild(link);
+
+      // 🌟 [수정 완료] 저장 직후 비디오나 이미지가 사라지지 않도록 상태 유지 및 복구 보장
+      if (currentMode === 'upload' && uploadedImageObj) {
+        imgPreview.style.display = "block";
+        video.style.display = "none";
+      } else {
+        video.style.display = "block";
+        imgPreview.style.display = "none";
+        if (video.paused) {
+          video.play().catch(err => console.log("비디오 복구 재생 오류:", err));
+        }
+      }
+
       statusMsg.innerText = "✅ 기기 사진 앱/다운로드 폴더에 저장되었습니다!";
       statusMsg.style.background = "#15803d";
     } catch (e) {
