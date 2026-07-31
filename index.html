@@ -220,7 +220,6 @@
     .profile-item .label { font-size: 0.65rem; color: #c084fc; display: block; }
     .profile-item .val { font-size: 0.9rem; font-weight: bold; color: #ffffff; margin-top: 2px; }
 
-    /* 연예인 매칭 박스 (싱크로율 근거 설명 포함) */
     .celeb-box {
       background: linear-gradient(135deg, #312e81, #1e1b4b);
       border: 1px solid #6366f1;
@@ -333,7 +332,6 @@
 <body>
 
 <div class="container" id="capture-container">
-  <!-- 상단 심볼 로고 -->
   <div class="app-header">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
       <circle cx="50" cy="50" r="42" fill="#1e1b4b" stroke="#facc15" stroke-width="3" stroke-dasharray="6 3"/>
@@ -393,7 +391,6 @@
       <div class="profile-item"><span class="label">오행/격국</span><span class="val" id="res-element" style="color:#facc15;">-</span></div>
     </div>
 
-    <!-- 닮은꼴 연예인 + 싱크로율 매칭 근거 -->
     <div class="celeb-box" id="celeb-container">
       <h4>✨ AI 관상 매칭 연예인 & 분석 포인트</h4>
       <div class="celeb-name" id="res-celeb">-</div>
@@ -443,8 +440,8 @@
   let isModelLoaded = false;
   let mediaStream = null;
   let uploadedImageObj = null;
+  let lastAnalyzedLandmarks = null; // 결과 상태 유지용
 
-  // 연예인 데이터베이스 (매칭 근거 포함)
   const CELEB_DB = {
     male: {
       top: [
@@ -485,14 +482,7 @@
   };
 
   function resetStatus(msg = "💡 스캔 준비 완료! 버튼을 클릭해 스캔하세요.") {
-    resultCard.style.display = "none";
     adjustTip.style.display = "none";
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    if (video.paused && mediaStream) {
-      video.play();
-    }
-
     if (isModelLoaded) {
       statusMsg.innerText = msg;
       statusMsg.style.background = "#334155";
@@ -510,6 +500,8 @@
           imgPreview.src = e.target.result;
           imgPreview.style.display = "block";
           video.style.display = "none";
+          resultCard.style.display = "none";
+          lastAnalyzedLandmarks = null;
           resetStatus("✅ 사진 선택 완료! 분석 버튼을 누르세요.");
           btnAction.innerText = "🔍 업로드 사진 정밀 분석하기";
         };
@@ -520,11 +512,15 @@
   });
 
   function switchMode(mode) {
+    if (currentMode === mode) return; // 동일 모드 중복 클릭 방지
     currentMode = mode;
     document.getElementById("tab-front").classList.toggle("active", mode === 'front');
     document.getElementById("tab-ear").classList.toggle("active", mode === 'ear');
     document.getElementById("tab-upload").classList.toggle("active", mode === 'upload');
 
+    resultCard.style.display = "none";
+    lastAnalyzedLandmarks = null;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     resetStatus();
 
     const guideHead = document.getElementById("guide-head");
@@ -571,7 +567,7 @@
 
   async function startCamera() {
     if (currentMode === 'upload') return;
-    stopCamera();
+    if (mediaStream) return; // 이미 실행 중이면 중복 요청 방지 (루프 방지)
 
     try {
       mediaStream = await navigator.mediaDevices.getUserMedia({
@@ -591,6 +587,7 @@
       mediaStream.getTracks().forEach(track => track.stop());
       mediaStream = null;
     }
+    video.srcObject = null;
   }
 
   function handleActionClick() {
@@ -604,17 +601,13 @@
       return;
     }
 
-    if (currentMode !== 'upload' && video.paused) {
-      video.play();
-    }
-
     runAnalysis();
   }
 
   async function runAnalysis() {
     scanOverlay.classList.add("active");
     adjustTip.style.display = "none";
-    statusMsg.innerText = "⏳ 혜안 AI 정밀 스캔 중... (이목구비 기하학 좌표 및 비대칭도 측정)";
+    statusMsg.innerText = "⏳ 혜안 AI 정밀 스캔 중... (이목구비 좌표 측정)";
     statusMsg.style.background = "#334155";
     resultCard.style.display = "none";
 
@@ -636,11 +629,12 @@
         scanOverlay.classList.remove("active");
 
         if (detections) {
-          if (currentMode !== 'upload') {
-            video.pause();
+          if (currentMode !== 'upload' && !video.paused) {
+            video.pause(); // 인식 완료 시 비디오 일시정지하여 고정
           }
 
           const resized = faceapi.resizeResults(detections, displaySize);
+          lastAnalyzedLandmarks = resized; // 상태 저장
           
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           faceapi.draw.drawFaceLandmarks(canvas, resized);
@@ -661,7 +655,7 @@
         scanOverlay.classList.remove("active");
         showAdjustGuide();
       }
-    }, 1800);
+    }, 1500);
   }
 
   function showAdjustGuide() {
@@ -675,13 +669,11 @@
     if (currentMode === 'ear') {
       adjustTipText.innerHTML = "<b>[측면/귀 스캔 위치 조율 팁]</b><br>" +
         "1. 귀 전체가 보이도록 머리카락을 넘겨주세요.<br>" +
-        "2. 카메라와 30~40cm 거리를 유지하고 대각선 45도로 고개를 천천히 돌려보세요.<br>" +
-        "3. 조명이 얼굴 측면을 밝게 비추고 있는지 확인해 주세요.";
+        "2. 카메라와 30~40cm 거리를 유지하고 대각선 45도로 고개를 천천히 돌려보세요.";
     } else {
       adjustTipText.innerHTML = "<b>[정면 스캔 위치 조율 팁]</b><br>" +
         "1. 카메라 정중앙에 얼굴을 맞춰주세요.<br>" +
-        "2. 이마부터 턱 끝까지 가려짐이 없어야 정밀 스캔이 가능합니다.<br>" +
-        "3. 조명이 너무 어둡거나 역광이 아닌지 확인해 주세요.";
+        "2. 이마부터 턱 끝까지 가려짐이 없어야 정밀 스캔이 가능합니다.";
     }
     adjustTip.style.display = "block";
   }
@@ -752,21 +744,18 @@
     const eyeShapeDesc = eyeRatio > 0.12
       ? "📐 [모양새] 가로로 길게 찢어져 판세를 통찰하는 '봉황의 눈매'"
       : "📐 [모양새] 동공이 또렷하고 눈매가 깊은 '신중한 수호의 눈'";
-    const eyeOrigData = "💡 [통찰력 측정] 안구 기하 좌표 분석 결과, 주변 상황에 대한 즉각적인 통찰력과 직관적 기회가 매우 강하게 작용하는 기운입니다.";
     const eyeGood = eyeRatio > 0.12 ? "상황 판단력이 뛰어남 기회를 빠르게 포착하고 판세를 관조하는 안목이 탁월함." : "관찰력이 치밀하여 실수가 적고 상대방의 진심을 파악하는 통찰력이 뛰어남.";
     const eyeBad = eyeRatio > 0.12 ? "지나치게 계산적이거나 차가워 보일 수 있어 감정적 유대감이 약해질 수 있음." : "생각이 너무 많아 결정적인 기회 앞에서 주저하다 타이밍을 놓칠 우려가 있음.";
 
     const noseShapeDesc = noseRatio > 0.23
       ? "📐 [모양새] 코 끝(준두)이 두툼하고 주머니처럼 돈을 싸쥐고 있는 '주머니형(쓸개) 코'"
       : "📐 [모양새] 콧대가 날렵하고 칼날처럼 곧게 뻗은 '대나무 마디형 칼코'";
-    const noseOrigData = "💡 [재백궁 측정] 콧대의 입체감과 비율로 보아 중년기 자산 형성 및 경제적 자립도가 안정적으로 상승하는 구조입니다.";
     const noseGood = noseRatio > 0.23 ? "중년기에 수장(守藏)의 복이 있어 재물이 쉽게 새나가지 않고 안정적으로 축적됨." : "지적 판단력이 주관적이고 명쾌하여 전문 직무나 사업적 결단에서 강한 명예를 얻음.";
     const noseBad = noseRatio > 0.23 ? "재물에 대한 집착이 강해 보일 수 있어 주위 사람에게 자칫 짠돌이로 오해받을 수 있음." : "코 끝의 살집이 상대적으로 얇아 타인에게 지나치게 차갑거나 독단적인 인상을 줄 수 있음.";
 
     const lipShapeDesc = lipRatio > 0.38
       ? "📐 [모양새] 좌우로 넓게 시원하게 벌어진 '대범한 사자형 입'"
       : "📐 [모양새] 입술 라인이 야무지게 다물어진 '단정한 조개형 입술'";
-    const lipOrigData = "💡 [수성관 측정] 입술 윤곽의 수평 비율상 대인관계의 영향력이 넓으며, 말년으로 갈수록 주변 인복이 공고해지는 신호입니다.";
     const lipGood = lipRatio > 0.38 ? "대인관계 도량이 넓고 말솜씨가 호탕하여 주변에 사람과 리더십이 몰림." : "비밀 유지가 철저하고 언행이 신중하여 말년 자산을 손실 없이 보존함.";
     const lipBad = lipRatio > 0.38 ? "말을 많이 하다 보면 구설수(口舌數)에 휘말리기 쉬우므로 언행 실수를 주의해야 함." : "자신의 속내를 타인에게 잘 드러내지 않아 소통 부족으로 오해를 살 위험이 있음.";
 
@@ -774,7 +763,7 @@
       <div class="detail-section" style="border-left-color: #38bdf8;">
         <div class="detail-header"><h4>🌱 상정 (이마 & 눈) - 지혜 / 초년</h4></div>
         <div class="shape-desc">${eyeShapeDesc}</div>
-        <div class="original-data">${eyeOrigData}</div>
+        <div class="original-data">💡 [통찰력 측정] 안구 기하 좌표 분석 결과, 주변 상황에 대한 즉각적인 통찰력이 작용합니다.</div>
         <div class="analysis-grid">
           <div class="good-box"><strong>🟢 장점 (기회)</strong>${eyeGood}</div>
           <div class="bad-box"><strong>🔴 단점 (주의)</strong>${eyeBad}</div>
@@ -783,7 +772,7 @@
       <div class="detail-section" style="border-left-color: #f59e0b;">
         <div class="detail-header"><h4>🔥 중정 (코 & 재백궁) - 재물 / 사업</h4></div>
         <div class="shape-desc">${noseShapeDesc}</div>
-        <div class="original-data">${noseOrigData}</div>
+        <div class="original-data">💡 [재백궁 측정] 콧대의 입체감으로 보아 중년기 자산 형성 및 독립적 자립도가 안정적입니다.</div>
         <div class="analysis-grid">
           <div class="good-box"><strong>🟢 장점 (기회)</strong>${noseGood}</div>
           <div class="bad-box"><strong>🔴 단점 (주의)</strong>${noseBad}</div>
@@ -792,7 +781,7 @@
       <div class="detail-section" style="border-left-color: #10b981;">
         <div class="detail-header"><h4>🛡️ 하정 (입 & 턱) - 인복 / 말년</h4></div>
         <div class="shape-desc">${lipShapeDesc}</div>
-        <div class="original-data">${lipOrigData}</div>
+        <div class="original-data">💡 [수성관 측정] 입술 윤곽의 수평 비율상 대인관계의 폭이 넓으며 인복이 공고해지는 신호입니다.</div>
         <div class="analysis-grid">
           <div class="good-box"><strong>🟢 장점 (기회)</strong>${lipGood}</div>
           <div class="bad-box"><strong>🔴 단점 (주의)</strong>${lipBad}</div>
@@ -801,7 +790,7 @@
     `;
 
     document.getElementById("desc-summary").innerText = 
-      `타고난 강점(${elementType})은 극대화하되, 특히 중정/하정에서 나타나는 '언행으로 인한 구설수'나 '지나친 차가움'을 경계해야 합니다. 평소 입꼬리를 올리는 미소와 상대를 배려하는 언어 습관을 기르면 흉한 기운이 완벽히 덕(德)으로 변화합니다.`;
+      `타고난 강점(${elementType})은 극대화하되, 특히 중정/하정에서 나타나는 '언행으로 인한 구설수'나 '지나친 차가움'을 경계해야 합니다. 평소 입꼬리를 올리는 미소와 상대를 배려하는 언어 습관을 기르면 운이 덕(德)으로 변화합니다.`;
 
     resultCard.style.display = "block";
   }
@@ -824,50 +813,42 @@
       <div class="detail-section" style="border-left-color: #ec4899;">
         <div class="detail-header"><h4>👂 귀(採聽官) - 정보수용 & 재물복</h4></div>
         <div class="shape-desc">📐 [모양새] 귀의 귓볼(수주)이 도톰하고 귓바퀴 윤곽이 뚜렷한 '부처님 귀 형상'</div>
-        <div class="original-data">💡 [수용력 측정] 귀의 각도 및 귓볼 형태상 타인의 의견을 잘 경청하며 불필요한 위험을 회피하는 안목이 있습니다.</div>
+        <div class="original-data">💡 [수용력 측정] 귀의 각도 및 귓볼 형태상 타인의 의견을 경청하는 안목이 있습니다.</div>
         <div class="analysis-grid">
-          <div class="good-box"><strong>🟢 장점 (기회)</strong>타인의 이야기를 경청하는 능력이 좋고 귀인의 도움으로 불필요한 재정적 위험을 피함.</div>
-          <div class="bad-box"><strong>🔴 단점 (주의)</strong>귀가 다소 우뚝 서 있어 타인의 달콤한 유혹이나 귀얇음에 속아 투자 손실을 입을 위험이 있음.</div>
+          <div class="good-box"><strong>🟢 장점 (기회)</strong>타인의 이야기를 경청하는 능력이 좋고 귀인의 도움을 받음.</div>
+          <div class="bad-box"><strong>🔴 단점 (주의)</strong>귀가 다소 우뚝 서 있어 타인의 달콤한 유혹에 주의해야 함.</div>
         </div>
       </div>
       <div class="detail-section" style="border-left-color: #8b5cf6;">
         <div class="detail-header"><h4>🗿 턱선 측면 라인 - 지구력 & 끈기</h4></div>
         <div class="shape-desc">📐 [모양새] 귀 아래에서 턱 끝까지 굳건하게 각진 '암석형 턱선'</div>
-        <div class="original-data">💡 [지구력 측정] 측면 하악골 각도로 보아 강한 추진력과 어려움을 극복하는 끈기가 뛰어난 관상입니다.</div>
+        <div class="original-data">💡 [지구력 측정] 측면 하악골 각도로 보아 강한 추진력과 끈기가 뛰어난 관상입니다.</div>
         <div class="analysis-grid">
-          <div class="good-box"><strong>🟢 장점 (기회)</strong>한번 마음먹은 일은 끝까지 밀어붙이는 돌파력과 말년의 밑바탕이 단단함.</div>
-          <div class="bad-box"><strong>🔴 단점 (주의)</strong>고집이 지나치게 세서 타인의 조언을 무시하다가 스스로 고립될 우려가 있음.</div>
+          <div class="good-box"><strong>🟢 장점 (기회)</strong>한번 마음먹은 일은 끝까지 밀어붙이는 돌파력이 좋음.</div>
+          <div class="bad-box"><strong>🔴 단점 (주의)</strong>고집이 세서 타인의 조언을 무시할 수 있음.</div>
         </div>
       </div>
     `;
 
     document.getElementById("desc-summary").innerText = 
-      "측면 관상상 턱선의 강한 추진력이 무기이지만, 고집으로 인한 타인과의 마찰을 주의해야 합니다. 남의 말을 귀담아듣되 주관을 지키는 유연성을 키우면 귀인의 복이 곱절로 늘어납니다.";
+      "측면 관상상 턱선의 강한 추진력이 무기이지만, 고집으로 인한 타인과의 마찰을 주의해야 합니다. 남의 말을 귀담아듣되 주관을 지키는 유연성을 키우면 귀인의 복이 늘어납니다.";
 
     resultCard.style.display = "block";
   }
 
-  /* 💾 사진 앱 저장 기능 (얼굴+랜드마크+결과카드 전체 캡처로 수정) */
+  /* 💾 사진 앱 저장 기능 (저장 완료 피드백 제공) */
   async function downloadResultImage() {
     const captureContainer = document.getElementById("capture-container");
     if (!captureContainer) return;
-    statusMsg.innerText = "⏳ 얼굴과 분석 결과 리포트를 사진 앱 저장용으로 렌더링 중...";
+    
+    statusMsg.innerText = "⏳ 사진 앱 저장용 이미지 렌더링 중...";
+    statusMsg.style.background = "#334155";
 
     try {
-      // 얼굴 캔버스의 현재 상태를 이미지로 임시 고정하여 누락 방지
-      const canvasImageURL = canvas.toDataURL("image/png");
-      const tempImg = document.createElement("img");
-      tempImg.src = canvasImageURL;
-      tempImg.style.position = "absolute";
-      tempImg.style.top = "0";
-      tempImg.style.left = "0";
-      tempImg.style.width = "100%";
-      tempImg.style.height = "100%";
-      tempImg.style.zIndex = "3";
-      tempImg.style.pointerEvents = "none";
-      
-      const videoWrapper = document.getElementById("video-wrapper-box");
-      videoWrapper.appendChild(tempImg);
+      if (lastAnalyzedLandmarks) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        faceapi.draw.drawFaceLandmarks(canvas, lastAnalyzedLandmarks);
+      }
 
       const canvasResult = await html2canvas(captureContainer, {
         backgroundColor: '#0f172a',
@@ -875,16 +856,15 @@
         useCORS: true
       });
 
-      tempImg.remove(); // 임시 이미지 제거
-
       const image = canvasResult.toDataURL('image/png');
       const link = document.createElement('a');
       link.href = image;
       link.download = '혜안_AI_정밀관상분석결과.png';
       link.click();
 
-      statusMsg.innerText = "✅ 사진 앱(갤러리)에 완벽하게 저장되었습니다!";
+      statusMsg.innerText = "✅ 사진 앱(갤러리) 저장 완료!";
       statusMsg.style.background = "#15803d";
+      alert("📸 관상 분석 결과가 사진 앱(다운로드 폴더/갤러리)에 안전하게 저장되었습니다!");
     } catch (e) {
       console.error(e);
       alert("이미지 저장 중 오류가 발생했습니다.");
