@@ -469,7 +469,6 @@
   let lastAnalyzedLandmarks = null;
   let frozenSnapshotUrl = null; 
 
-  // 🌟 남녀별 다양화된 연예인 및 관상 풀 DB
   const CELEB_DB = {
     male: {
       top: [
@@ -507,7 +506,6 @@
     }
   };
 
-  // 🌟 부위별 맞춤형 세부 분석 문구 풀 (얼굴 비율에 따라 랜덤 조합)
   const EYE_POOLS = [
     { title: "초롱초롱한 관찰력과 통찰의 눈매", desc: "주변의 미세한 변화나 상대방의 진심을 빠르게 간파하는 직관적 안목이 뛰어납니다. 대인관계에서 신뢰를 얻는 무기가 됩니다." },
     { title: "깊이 있는 사색과 지혜의 눈빛", desc: "감정에 치우치지 않고 객관적으로 상황을 조망하는 능력이 탁월합니다. 중요한 결정을 내릴 때 오판을 줄이는 강력한 힘을 발휘합니다." },
@@ -676,13 +674,13 @@
     clearAllData();
 
     if (currentMode !== 'upload') {
-      statusMsg.innerText = "📸 잠시만 정면을 유지해 주세요... (준비 중)";
+      statusMsg.innerText = "📸 잠시만 정면/측면을 유지해 주세요... (준비 중)";
       statusMsg.style.background = "#e2e8f0";
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
     scanOverlay.classList.add("active");
-    statusMsg.innerText = "⏳ AI관상 정밀 스캔 중... (이목구비 68개 좌표 심층 측정)";
+    statusMsg.innerText = "⏳ AI관상 정밀 스캔 중... (이목구비 좌표 및 측면 윤곽 측정)";
     statusMsg.style.background = "#f1f5f9";
 
     const targetEl = currentMode === 'upload' ? imgPreview : video;
@@ -731,13 +729,18 @@
           }
           
           lastAnalyzedLandmarks = resized;
-          
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           
-          faceapi.draw.drawFaceLandmarks(canvas, resized, {
-            pointColor: { color: '#0284c7', lineWidth: 1 },
-            boxColor: { color: '#b45309', lineWidth: 1 }
-          });
+          if (currentMode === 'ear') {
+            // 🌟 [신규 추가] 귀 및 측면 턱선 스캔 시 시각적 신뢰감을 주는 커스텀 점·선 가이드 렌더링
+            drawEarScanVisualization(ctx, pos, w, h);
+          } else {
+            // 정면 모드 기본 랜드마크
+            faceapi.draw.drawFaceLandmarks(canvas, resized, {
+              pointColor: { color: '#0284c7', lineWidth: 1 },
+              boxColor: { color: '#b45309', lineWidth: 1 }
+            });
+          }
 
           if (currentMode === 'ear') generateSideReport(resized);
           else generateFrontReport(resized);
@@ -755,7 +758,62 @@
     }, 2000);
   }
 
-  // 🌟 좌표 기반 고유 난수 생성기 (얼굴 특징값들을 조합하여 두 분이 서로 다른 결과가 나오도록 유도)
+  // 🌟 귀/측면 모드 전용 시각화 함수 (귀 윤곽 추정 포인트 및 보조선, 십자 스캐너 효과)
+  function drawEarScanVisualization(ctx, pos, w, h) {
+    // 1. 턱선 및 옆모습 윤곽선 강조 연결
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    // 턱 끝에서 귀 방향으로 이어지는 라인 시뮬레이션
+    let startIdx = pos[8].x < w / 2 ? 0 : 16; // 얼굴 방향에 따라 좌우 선택
+    ctx.moveTo(pos[startIdx].x, pos[startIdx].y);
+    for (let i = startIdx; i !== (startIdx === 0 ? 5 : 11); i += (startIdx === 0 ? 1 : -1)) {
+      ctx.lineTo(pos[i].x, pos[i].y);
+    }
+    ctx.stroke();
+
+    // 2. 가상의 귀 위치에 '채청관(採聽)' 정밀 분석 포인트 타겟팅 생성 (관상학적 포인트 기조)
+    let earX = startIdx === 0 ? pos[0].x - (w * 0.08) : pos[16].x + (w * 0.08);
+    let earY = pos[27].y; // 눈썹-코 높이 부근
+
+    // 타겟 조준 박스 그리기
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(earX - 35, earY - 45, 70, 90);
+
+    // 내부 스캔 점들 (귀 륜, 곽, 귓불 위치 시각화)
+    const earPoints = [
+      { x: earX, y: earY - 30, label: "륜(輪)" },
+      { x: earX, y: earY, label: "곽(廓)" },
+      { x: earX, y: earY + 30, label: "수주(垂珠)" }
+    ];
+
+    earPoints.forEach((pt, idx) => {
+      ctx.fillStyle = '#10b981';
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 5, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // 글자 라벨
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText(pt.x > w / 2 ? pt.x + 10 : pt.x - 45, pt.y + 4, pt.label);
+    });
+
+    // 3. 십자 조준선 및 하관 분석선
+    ctx.strokeStyle = 'rgba(59, 130, 246, 0.7)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(earX, 0); ctx.lineTo(earX, h); // 귀 수직선
+    ctx.moveTo(0, pos[8].y); ctx.lineTo(w, pos[8].y); // 턱 수평선
+    ctx.stroke();
+    ctx.setLineDash([]); // 초기화
+  }
+
   function getUniqueHash(pos) {
     let sumX = 0, sumY = 0;
     for (let i = 0; i < pos.length; i += 3) {
@@ -769,8 +827,6 @@
     const isMale = detections.gender === "male";
     const age = Math.round(detections.age);
     const pos = detections.landmarks.positions;
-    
-    // 얼굴 고유 해시값 추출
     const hash = getUniqueHash(pos);
 
     document.getElementById("result-main-title").innerText = "📊 정면 정밀 관상 리포트";
@@ -779,7 +835,6 @@
     document.getElementById("celeb-container").style.display = "block";
     document.getElementById("ratio-container").style.display = "flex";
 
-    // 운세 점수 고유 배정 (88~99점 사이)
     document.getElementById("score-love").innerText = `${(hash % 11) + 89}점 ⭐`;
     document.getElementById("score-wealth").innerText = `${((hash >> 2) % 11) + 89}점 💰`;
     document.getElementById("score-career").innerText = `${((hash >> 4) % 11) + 89}점 🏆`;
@@ -819,7 +874,6 @@
     document.getElementById("res-celeb").innerText = `${matchedCeleb.name} (싱크로율 ${ (hash % 7) + 92 }%)`;
     document.getElementById("res-celeb-reason").innerText = `💡 [매칭 근거] ${matchedCeleb.reason}`;
 
-    // 🌟 부위별 맞춤 풀에서 고유 인덱스로 문구 선택
     const eyeItem = EYE_POOLS[hash % EYE_POOLS.length];
     const noseItem = NOSE_POOLS[(hash >> 1) % NOSE_POOLS.length];
     const mouthItem = MOUTH_POOLS[(hash >> 2) % MOUTH_POOLS.length];
@@ -925,10 +979,14 @@
     try {
       if (lastAnalyzedLandmarks) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        faceapi.draw.drawFaceLandmarks(canvas, lastAnalyzedLandmarks, {
-          pointColor: { color: '#0284c7', lineWidth: 1 },
-          boxColor: { color: '#b45309', lineWidth: 1 }
-        });
+        if (currentMode === 'ear') {
+          drawEarScanVisualization(ctx, lastAnalyzedLandmarks.landmarks.positions, canvas.width, canvas.height);
+        } else {
+          faceapi.draw.drawFaceLandmarks(canvas, lastAnalyzedLandmarks, {
+            pointColor: { color: '#0284c7', lineWidth: 1 },
+            boxColor: { color: '#b45309', lineWidth: 1 }
+          });
+        }
       }
 
       const canvasResult = await html2canvas(captureContainer, { backgroundColor: '#ffffff', scale: 2, useCORS: true });
