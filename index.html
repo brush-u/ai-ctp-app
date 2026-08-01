@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>AI 정밀 관상</title>
   
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="#f1f5f9">
   <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
 
   <!-- face-api.js CDN -->
@@ -19,8 +19,8 @@
     html, body {
       width: 100%;
       min-height: 100dvh;
-      background-color: #0f172a;
-      color: #f8fafc;
+      background-color: #f1f5f9;
+      color: #1e293b;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       overflow-x: hidden;
     }
@@ -34,10 +34,10 @@
     }
 
     .container {
-      background: #1e293b;
+      background: #ffffff;
       padding: 16px;
       border-radius: 20px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
       max-width: 480px;
       width: 100%;
       text-align: center;
@@ -53,24 +53,24 @@
     }
     .app-header svg { width: 28px; height: 28px; }
 
-    h1 { font-size: 1.35rem; color: #facc15; display: inline-block; }
-    p.desc { font-size: 0.78rem; color: #94a3b8; margin-bottom: 10px; }
+    h1 { font-size: 1.35rem; color: #4338ca; display: inline-block; }
+    p.desc { font-size: 0.78rem; color: #64748b; margin-bottom: 10px; }
 
     .mode-selector {
       display: flex;
       gap: 4px;
       margin-bottom: 10px;
-      background: #0f172a;
+      background: #f8fafc;
       padding: 4px;
       border-radius: 10px;
-      border: 1px solid #334155;
+      border: 1px solid #e2e8f0;
     }
     .mode-btn {
       flex: 1;
       padding: 9px 2px;
       font-size: 0.75rem;
       background: transparent;
-      color: #94a3b8;
+      color: #64748b;
       border-radius: 6px;
       cursor: pointer;
       border: none;
@@ -84,32 +84,34 @@
     }
 
     .guide-box {
-      background: #0f172a;
-      border: 1px dashed #6366f1;
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
       border-radius: 10px;
       padding: 8px 12px;
       margin-bottom: 10px;
       text-align: left;
       font-size: 0.72rem;
       line-height: 1.35;
+      color: #334155;
     }
-    .guide-box .guide-title { color: #facc15; font-weight: bold; margin-bottom: 2px; }
-    .good { color: #4ade80; font-weight: bold; }
-    .bad { color: #f87171; font-weight: bold; }
+    .guide-box .guide-title { color: #d97706; font-weight: bold; margin-bottom: 2px; }
+    .good { color: #16a34a; font-weight: bold; }
+    .bad { color: #dc2626; font-weight: bold; }
     
     .status-msg {
-      background: #334155;
-      color: #f1f5f9;
+      background: #f1f5f9;
+      color: #334155;
       padding: 8px 10px;
       border-radius: 8px;
       font-size: 0.8rem;
       margin-bottom: 10px;
       font-weight: bold;
-      min-height: 40px;
+      min-height: 44px;
       display: flex;
       align-items: center;
       justify-content: center;
       line-height: 1.3;
+      border: 1px solid #e2e8f0;
     }
 
     .video-wrapper {
@@ -119,7 +121,7 @@
       border-radius: 12px;
       overflow: hidden;
       margin-bottom: 10px;
-      border: 2px solid #334155;
+      border: 2px solid #e2e8f0;
       aspect-ratio: 4 / 3;
       display: flex;
       align-items: center;
@@ -150,8 +152,8 @@
     .scan-line {
       position: absolute;
       top: 0; left: 0; width: 100%; height: 4px;
-      background: linear-gradient(90deg, transparent, #ef4444, #facc15, #ef4444, transparent);
-      box-shadow: 0 0 15px #ef4444, 0 0 25px #facc15;
+      background: linear-gradient(90deg, transparent, #ef4444, #f59e0b, #ef4444, transparent);
+      box-shadow: 0 0 15px #ef4444, 0 0 25px #f59e0b;
       animation: scan-move 2s linear infinite;
     }
     @keyframes scan-move {
@@ -170,13 +172,13 @@
       border-radius: 10px;
       cursor: pointer;
       width: 100%;
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.25);
     }
 
     .adjust-tip {
-      background: #7f1d1d;
-      border: 1px solid #ef4444;
-      color: #fecaca;
+      background: #fef2f2;
+      border: 1px solid #fca5a5;
+      color: #991b1b;
       padding: 8px 10px;
       border-radius: 8px;
       font-size: 0.75rem;
@@ -186,112 +188,135 @@
       line-height: 1.35;
     }
 
+    /* 결과 카드 스타일 */
     .result-card {
       margin-top: 12px;
-      background: #0f172a;
-      padding: 14px;
+      background: #f8fafc;
+      padding: 16px;
       border-radius: 14px;
       text-align: left;
       display: none;
-      border: 1px solid #334155;
+      border: 1px solid #e2e8f0;
+      font-size: 0.9rem;
     }
-    .result-card h3 { color: #facc15; margin-bottom: 8px; font-size: 1rem; text-align: center; border-bottom: 1px solid #334155; padding-bottom: 6px; }
+    .result-card h3 { color: #4338ca; margin-bottom: 12px; font-size: 1.2rem; text-align: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
 
     .profile-bar {
       display: flex;
       justify-content: space-around;
-      background: #1e1b4b;
-      padding: 8px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-    }
-    .profile-item { text-align: center; }
-    .profile-item .label { font-size: 0.65rem; color: #c084fc; display: block; }
-    .profile-item .val { font-size: 0.9rem; font-weight: bold; color: #ffffff; margin-top: 2px; }
-
-    .celeb-box {
-      background: linear-gradient(135deg, #312e81, #1e1b4b);
-      border: 1px solid #6366f1;
+      background: #ffffff;
       padding: 10px;
       border-radius: 8px;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
+      border: 1px solid #e2e8f0;
+    }
+    .profile-item { text-align: center; }
+    .profile-item .label { font-size: 0.75rem; color: #7c3aed; display: block; }
+    .profile-item .val { font-size: 1.1rem; font-weight: bold; color: #1e293b; margin-top: 3px; }
+
+    /* 운세 요약 카드 섹션 */
+    .fortune-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .fortune-box {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      padding: 8px 4px;
+      border-radius: 8px;
       text-align: center;
     }
-    .celeb-box h4 { color: #38bdf8; font-size: 0.75rem; margin-bottom: 3px; }
-    .celeb-box .celeb-name { font-size: 1.1rem; font-weight: bold; color: #facc15; margin-bottom: 4px; }
-    .celeb-reason { font-size: 0.71rem; color: #cbd5e1; background: rgba(15, 23, 42, 0.6); padding: 5px 8px; border-radius: 6px; line-height: 1.35; }
+    .fortune-box .f-title { font-size: 0.72rem; color: #64748b; margin-bottom: 3px; }
+    .fortune-box .f-score { font-size: 0.95rem; font-weight: bold; color: #d97706; }
+
+    .celeb-box {
+      background: linear-gradient(135deg, #eef2ff, #f3e8ff);
+      border: 1px solid #c7d2fe;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+    .celeb-box h4 { color: #0284c7; font-size: 0.85rem; margin-bottom: 5px; }
+    .celeb-box .celeb-name { font-size: 1.3rem; font-weight: bold; color: #b45309; margin-bottom: 6px; }
+    .celeb-reason { font-size: 0.8rem; color: #334155; background: rgba(255, 255, 255, 0.7); padding: 6px 10px; border-radius: 6px; line-height: 1.4; border: 1px solid #e2e8f0; }
 
     .ratios {
       display: flex;
       justify-content: space-between;
-      margin-bottom: 10px;
-      background: #1e293b;
-      padding: 8px;
-      border-radius: 8px;
-      font-size: 0.75rem;
-      border: 1px solid #334155;
-    }
-    .ratios div { text-align: center; flex: 1; }
-    .ratios span { display: block; font-weight: bold; font-size: 0.95rem; color: #38bdf8; margin-top: 2px; }
-
-    .detail-section {
-      background: #1e293b;
+      margin-bottom: 12px;
+      background: #ffffff;
       padding: 10px;
       border-radius: 8px;
+      font-size: 0.8rem;
+      border: 1px solid #e2e8f0;
+      color: #475569;
+    }
+    .ratios div { text-align: center; flex: 1; }
+    .ratios span { display: block; font-weight: bold; font-size: 1.1rem; color: #0284c7; margin-top: 4px; }
+
+    .detail-section {
+      background: #ffffff;
+      padding: 12px;
+      border-radius: 8px;
       margin-bottom: 10px;
+      border: 1px solid #e2e8f0;
       border-left: 4px solid #6366f1;
     }
-    .detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
-    .detail-section h4 { color: #facc15; font-size: 0.82rem; }
+    .detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .detail-section h4 { color: #b45309; font-size: 0.95rem; }
 
     .shape-desc {
-      background: #0f172a;
-      padding: 6px 8px;
+      background: #f8fafc;
+      padding: 8px;
       border-radius: 6px;
-      font-size: 0.72rem;
-      color: #38bdf8;
-      margin-bottom: 6px;
-      border: 1px solid #334155;
+      font-size: 0.83rem;
+      color: #0284c7;
+      margin-bottom: 8px;
+      border: 1px solid #e2e8f0;
       font-weight: 500;
     }
 
     .original-data {
-      font-size: 0.73rem;
-      color: #e2e8f0;
-      line-height: 1.4;
-      margin-bottom: 8px;
-      background: rgba(15, 23, 42, 0.5);
-      padding: 6px 8px;
+      font-size: 0.8rem;
+      color: #334155;
+      line-height: 1.5;
+      margin-bottom: 10px;
+      background: #f8fafc;
+      padding: 8px;
       border-radius: 6px;
+      border: 1px solid #e2e8f0;
     }
 
     .analysis-grid {
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      margin-top: 4px;
+      gap: 8px;
+      margin-top: 6px;
     }
     .good-box {
-      background: rgba(22, 101, 52, 0.25);
-      border: 1px solid #15803d;
-      padding: 8px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      padding: 10px;
       border-radius: 6px;
-      font-size: 0.75rem;
-      line-height: 1.4;
-      color: #bbf7d0;
+      font-size: 0.83rem;
+      line-height: 1.5;
+      color: #166534;
     }
-    .good-box strong { color: #4ade80; display: block; margin-bottom: 4px; font-size: 0.8rem;}
+    .good-box strong { color: #15803d; display: block; margin-bottom: 5px; font-size: 0.9rem;}
 
     .bad-box {
-      background: rgba(153, 27, 27, 0.25);
-      border: 1px solid #991b1b;
-      padding: 8px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      padding: 10px;
       border-radius: 6px;
-      font-size: 0.75rem;
-      line-height: 1.4;
-      color: #fecaca;
+      font-size: 0.83rem;
+      line-height: 1.5;
+      color: #991b1b;
     }
-    .bad-box strong { color: #f87171; display: block; margin-bottom: 4px; font-size: 0.8rem;}
+    .bad-box strong { color: #dc2626; display: block; margin-bottom: 5px; font-size: 0.9rem;}
 
     .share-action-grid {
       display: grid;
@@ -299,12 +324,12 @@
       gap: 8px;
       margin-top: 12px;
       padding-top: 10px;
-      border-top: 1px dashed #334155;
+      border-top: 1px dashed #cbd5e1;
     }
     .share-btn {
       padding: 10px;
       border-radius: 8px;
-      font-size: 0.78rem;
+      font-size: 0.85rem;
       font-weight: bold;
       border: none;
       cursor: pointer;
@@ -314,8 +339,8 @@
       gap: 5px;
       transition: all 0.2s;
     }
-    .btn-save { background: #334155; color: #f8fafc; border: 1px solid #475569; }
-    .btn-share { background: #facc15; color: #0f172a; }
+    .btn-save { background: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; }
+    .btn-share { background: #f59e0b; color: #ffffff; }
   </style>
 </head>
 <body>
@@ -323,11 +348,11 @@
 <div class="container" id="capture-container">
   <div class="app-header">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r="42" fill="#1e1b4b" stroke="#facc15" stroke-width="3" stroke-dasharray="6 3"/>
-      <path d="M 20 50 Q 50 20 80 50 Q 50 80 20 50 Z" fill="#0f172a" stroke="#38bdf8" stroke-width="4"/>
-      <circle cx="50" cy="50" r="12" fill="#facc15"/>
-      <circle cx="50" cy="50" r="6" fill="#0f172a"/>
-      <circle cx="52" cy="48" r="2" fill="#ffffff"/>
+      <circle cx="50" cy="50" r="42" fill="#e0e7ff" stroke="#4338ca" stroke-width="3" stroke-dasharray="6 3"/>
+      <path d="M 20 50 Q 50 20 80 50 Q 50 80 20 50 Z" fill="#ffffff" stroke="#0284c7" stroke-width="4"/>
+      <circle cx="50" cy="50" r="12" fill="#4338ca"/>
+      <circle cx="50" cy="50" r="6" fill="#ffffff"/>
+      <circle cx="52" cy="48" r="2" fill="#4338ca"/>
     </svg>
     <h1>AI 정밀 관상</h1>
   </div>
@@ -376,7 +401,23 @@
     <div class="profile-bar">
       <div class="profile-item"><span class="label">성별</span><span class="val" id="res-gender">-</span></div>
       <div class="profile-item"><span class="label">추정 연령</span><span class="val" id="res-age">-</span></div>
-      <div class="profile-item"><span class="label">오행/격국</span><span class="val" id="res-element" style="color:#facc15;">-</span></div>
+      <div class="profile-item"><span class="label">오행/격국</span><span class="val" id="res-element" style="color:#d97706;">-</span></div>
+    </div>
+
+    <!-- 🌟 핵심 운세 요약 카드 -->
+    <div class="fortune-grid" id="fortune-grid-box">
+      <div class="fortune-box">
+        <div class="f-title">💖 연애/애정운</div>
+        <div class="f-score" id="score-love">-</div>
+      </div>
+      <div class="fortune-box">
+        <div class="f-title">💰 재물/금전운</div>
+        <div class="f-score" id="score-wealth">-</div>
+      </div>
+      <div class="fortune-box">
+        <div class="f-title">💼 직장/사업운</div>
+        <div class="f-score" id="score-career">-</div>
+      </div>
     </div>
 
     <div class="celeb-box" id="celeb-container">
@@ -397,7 +438,7 @@
       <div class="detail-header">
         <h4>💡 관상 총평 및 현실적 개운(開運) 조언</h4>
       </div>
-      <p id="desc-summary" style="font-size:0.78rem; line-height:1.45; color:#e2e8f0;">-</p>
+      <p id="desc-summary" style="font-size:0.85rem; line-height:1.5; color:#334155;">-</p>
     </div>
 
     <div class="share-action-grid">
@@ -472,7 +513,7 @@
   function resetStatus(msg = "💡 스캔 준비 완료! 버튼을 클릭해 스캔하세요.") {
     if (isModelLoaded) {
       statusMsg.innerText = msg;
-      statusMsg.style.background = "#334155";
+      statusMsg.style.background = "#f1f5f9";
     }
   }
 
@@ -511,7 +552,6 @@
     const guideHead = document.getElementById("guide-head");
     const guideList = document.getElementById("guide-list");
 
-    // 모드 전환 시 이전 스냅샷 상태 완전 초기화
     if (frozenSnapshotUrl) {
       frozenSnapshotUrl = null;
     }
@@ -572,7 +612,7 @@
       await video.play();
     } catch (err) {
       statusMsg.innerText = "⚠️ 카메라에 접근할 수 없습니다. (사진 업로드 모드를 이용하세요)";
-      statusMsg.style.background = "#b91c1c";
+      statusMsg.style.background = "#fee2e2";
     }
   }
 
@@ -592,7 +632,7 @@
       if (video.paused) video.play().catch(e => {});
     }
     statusMsg.innerText = "⚠️ 분석 실패. 가이드에 맞춰 위치를 조정해주세요.";
-    statusMsg.style.background = "#991b1b";
+    statusMsg.style.background = "#fee2e2";
     adjustTipText.innerText = msg;
     adjustTip.style.display = "block";
   }
@@ -612,13 +652,18 @@
   async function runAnalysis() {
     clearAllData();
 
+    if (currentMode !== 'upload') {
+      statusMsg.innerText = "📸 잠시만 정면을 유지해 주세요... (준비 중)";
+      statusMsg.style.background = "#e2e8f0";
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
     scanOverlay.classList.add("active");
     statusMsg.innerText = "⏳ AI관상 정밀 스캔 중... (이목구비 68개 좌표 심층 측정)";
-    statusMsg.style.background = "#334155";
+    statusMsg.style.background = "#f1f5f9";
 
     const targetEl = currentMode === 'upload' ? imgPreview : video;
     
-    // 🌟 카메라 모드일 경우 현재 화면을 스냅샷으로 떠서 이미지 요소에 고정 (얼굴이 계속 남아있게 함)
     if (currentMode !== 'upload' && video.videoWidth > 0) {
       const snapCanvas = document.createElement('canvas');
       snapCanvas.width = video.videoWidth;
@@ -666,17 +711,16 @@
           
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           
-          // 🌟 [핵심 수정] 점선과 박스 두께를 정면/업로드 모두 얇고 깔끔하게 완벽 동기화 (lineWidth: 1)
           faceapi.draw.drawFaceLandmarks(canvas, resized, {
-            pointColor: { color: '#38bdf8', lineWidth: 1 },
-            boxColor: { color: '#facc15', lineWidth: 1 }
+            pointColor: { color: '#0284c7', lineWidth: 1 },
+            boxColor: { color: '#b45309', lineWidth: 1 }
           });
 
           if (currentMode === 'ear') generateSideReport(resized);
           else generateFrontReport(resized);
 
           statusMsg.innerText = "✅ 정밀 관상 분석이 완료되었습니다!";
-          statusMsg.style.background = "#15803d";
+          statusMsg.style.background = "#dcfce7";
         } else {
           showAdjustGuide();
         }
@@ -699,6 +743,11 @@
     document.getElementById("celeb-container").style.display = "block";
     document.getElementById("ratio-container").style.display = "flex";
 
+    // 운세 점수 랜덤 생성 (90~98점 사이)
+    document.getElementById("score-love").innerText = `${Math.floor(Math.random() * 8 + 91)}점 ⭐`;
+    document.getElementById("score-wealth").innerText = `${Math.floor(Math.random() * 8 + 92)}점 💰`;
+    document.getElementById("score-career").innerText = `${Math.floor(Math.random() * 8 + 91)}점 🏆`;
+
     const topY = pos[21].y; const midY = pos[33].y; const botY = pos[8].y;  
     const topH = Math.max(10, topY - (midY - topY) * 0.85);
     const topLen = Math.abs(topY - topH);
@@ -713,9 +762,6 @@
     document.getElementById("r-top").innerText = `${tPct}%`;
     document.getElementById("r-mid").innerText = `${mPct}%`;
     document.getElementById("r-bot").innerText = `${bPct}%`;
-
-    const noseRatio = Math.abs(pos[35].x - pos[31].x) / Math.abs(pos[16].x - pos[0].x);
-    const lipRatio = Math.abs(pos[54].x - pos[48].x) / Math.abs(pos[16].x - pos[0].x);
 
     const genderKey = isMale ? 'male' : 'female';
     let pool = CELEB_DB[genderKey].mid;
@@ -737,39 +783,52 @@
     document.getElementById("res-celeb").innerText = `${matchedCeleb.name} (싱크로율 ${Math.floor(Math.random() * 7 + 91)}%)`;
     document.getElementById("res-celeb-reason").innerText = `💡 [매칭 근거] ${matchedCeleb.reason}`;
 
+    // 🌟 눈, 코, 입, 얼굴빛(혈색) 부위별 상세 분석 리포트 추가
     const detailsDiv = document.getElementById("details-container");
     detailsDiv.innerHTML = `
-      <div class="detail-section" style="border-left-color: #38bdf8;">
-        <div class="detail-header"><h4>🌱 관록궁(상정) - 학문/명예/초년운</h4></div>
-        <div class="shape-desc">📐 [형태 분석] 명궁(미간)이 열려있고 이마의 윤곽이 반듯한 형상</div>
-        <div class="original-data">💡 [측정 결과] 이마 윗선부터 눈썹까지의 면적이 얼굴 전체 비율 대비 안정적이며, 이는 정보 습득력과 선견지명이 우수함을 의미합니다. 새로운 지식을 빠르게 흡수하며 지적 호기심이 강합니다.</div>
+      <div class="detail-section" style="border-left-color: #0284c7;">
+        <div class="detail-header"><h4>👀 감수성 & 인기운 (눈·눈썹)</h4></div>
+        <div class="shape-desc">📐 [형태 분석] 안광이 맑고 눈꼬리가 수평을 이루어 신뢰감을 주는 형상</div>
+        <div class="original-data">💡 [측정 결과] 눈썹과 눈동자의 거리 및 눈매의 곡선이 안정적입니다. 타인의 감정을 빠르게 알아채는 공감 능력이 뛰어나며, 이성에게 어필하는 매력과 대인 인기운이 매우 높게 작용합니다.</div>
         <div class="analysis-grid">
-          <div class="good-box"><strong>🟢 긍정적 측면 (장점)</strong>뛰어난 직관력과 기획력을 바탕으로 복잡한 업무나 새로운 환경에 빠르게 적응합니다. 남들보다 핵심을 꿰뚫어 보는 안목이 발달하여, 학업이나 직장 초기(초년~청년기)에 돋보이는 성과를 창출할 수 있는 영특한 기운을 지녔습니다.</div>
-          <div class="bad-box"><strong>🔴 보완할 점 (주의)</strong>이성과 논리를 너무 중요하게 생각하다 보니, 때로는 주변 사람들의 섬세한 감정을 놓쳐 차갑거나 계산적이라는 오해를 받을 수 있습니다. 인간관계에서 따뜻한 공감의 말 한마디를 건네는 습관이 필요합니다.</div>
+          <div class="good-box"><strong>🟢 연애/인기 장점</strong>눈빛에서 뿜어져 나오는 부드러운 카리스마와 진정성 덕분에 첫인상 호감도가 높고, 연애 시 상대방을 편안하게 해주는 훌륭한 파트너입니다.</div>
+          <div class="bad-box"><strong>🔴 주의할 점</strong>지나치게 주변의 시선이나 상대방의 감정에 민감하게 반응하여 본인 스스로 피로감을 느낄 수 있으니 마인드 컨트롤이 필요합니다.</div>
         </div>
       </div>
-      <div class="detail-section" style="border-left-color: #f59e0b;">
-        <div class="detail-header"><h4>🔥 재백궁(중정) - 재물/사업/중년운</h4></div>
-        <div class="shape-desc">📐 [형태 분석] ${noseRatio > 0.22 ? "재물이 모이는 콧방울(난대/정위) 발달형" : "자존심과 추진력을 상징하는 뻗은 콧대"}</div>
-        <div class="original-data">💡 [측정 결과] 코와 관골(광대)의 입체 비율이 뚜렷하여 중년기에 사회적 지위나 금전적 보상을 쟁취하려는 에너지가 매우 강하게 나타납니다. 재물을 다루는 감각이 뛰어납니다.</div>
+
+      <div class="detail-section" style="border-left-color: #d97706;">
+        <div class="detail-header"><h4>👃 재물운 & 자존감 (코·관골)</h4></div>
+        <div class="shape-desc">📐 [형태 분석] 콧대가 곧고 콧방울(재백궁)의 탄력이 우수한 상</div>
+        <div class="original-data">💡 [측정 결과] 코는 관상학에서 재물과 자존심을 관장합니다. 콧대가 반듯하게 뻗어 있어 금전적 안목이 뛰어나고, 중년 이후 안정적인 재물 축적과 명예를 동시에 거머쥘 기운입니다.</div>
         <div class="analysis-grid">
-          <div class="good-box"><strong>🟢 긍정적 측면 (장점)</strong>뛰어난 재물 감각과 목표를 이루기 위한 강력한 추진력이 돋보입니다. 중년기에 접어들며 자신의 분야에서 확고한 입지를 다지고, 한번 손에 들어온 재물을 쉽게 흘려보내지 않아 안정적인 부를 축적할 수 있습니다.</div>
-          <div class="bad-box"><strong>🔴 보완할 점 (주의)</strong>목표를 향해 직진하는 성향 탓에 주변 의견과 타협하는 것에 다소 인색해질 수 있습니다. 금전적 손실을 극도로 꺼려하여 오히려 투자의 큰 기회를 놓칠 수 있으니, 유연하고 대범한 마인드 컨트롤이 요구됩니다.</div>
+          <div class="good-box"><strong>🟢 재물운 장점</strong>목표한 재산을 모으는 집념과 금전 관리 능력이 탁월합니다. 철저한 계획하에 투자를 진행하므로 큰 손실 없이 부를 일굴 수 있습니다.</div>
+          <div class="bad-box"><strong>🔴 주의할 점</strong>가끔 지나친 완벽주의와 자존심 때문에 동업이나 타인과의 금전 거래에서 불필요한 고집을 부릴 수 있으니 유연성이 요구됩니다.</div>
         </div>
       </div>
-      <div class="detail-section" style="border-left-color: #10b981;">
-        <div class="detail-header"><h4>🛡️ 노복궁(하정) - 인복/주거/말년운</h4></div>
-        <div class="shape-desc">📐 [형태 분석] ${lipRatio > 0.35 ? "포용력이 돋보이는 두터운 입술과 하관" : "절제력과 책임감이 강한 단정한 턱선"}</div>
-        <div class="original-data">💡 [측정 결과] 입꼬리 주변(해각)부터 턱 끝(지각)으로 이어지는 라인이 묵직하여, 타인을 수용하는 그릇이 크고 말년으로 갈수록 주변에 사람이 모여드는 인복이 넘칩니다.</div>
+
+      <div class="detail-section" style="border-left-color: #16a34a;">
+        <div class="detail-header"><h4>👄 애정운 & 말년복 (입·하관)</h4></div>
+        <div class="shape-desc">📐 [형태 분석] 입술 선이 명확하고 입꼬리가 자연스럽게 올라간 형상</div>
+        <div class="original-data">💡 [측정 결과] 언변이 유려하고 복을 담아두는 그릇이 큽니다. 말년으로 갈수록 주변에 사람이 모여들고, 가정생활이나 대인관계에서 따뜻한 온기와 복록을 누리게 됩니다.</div>
         <div class="analysis-grid">
-          <div class="good-box"><strong>🟢 긍정적 측면 (장점)</strong>동료나 아랫사람을 너그럽게 품어주는 훌륭한 리더십과 포용력을 지녔습니다. 위기가 닥쳐도 묵묵히 버텨내는 강한 인내심 덕분에, 중년 이후 안정적인 주거와 풍부한 인적 네트워크를 형성하게 됩니다.</div>
-          <div class="bad-box"><strong>🔴 보완할 점 (주의)</strong>한번 맺은 인연에 대한 책임감이 너무 강해, 나에게 피해를 주는 불필요한 관계까지 안고 가려는 경향이 있습니다. 가끔은 정에 이끌려 객관적인 판단력을 잃을 수 있으므로 공과 사의 명확한 구분이 중요합니다.</div>
+          <div class="good-box"><strong>🟢 애정/말년 장점</strong>다정한 말투와 포용력 덕분에 주변 사람들로부터 깊은 신뢰와 사랑을 받으며, 노년으로 갈수록 삶이 풍요롭고 안정됩니다.</div>
+          <div class="bad-box"><strong>🔴 주의할 점</strong>누구나 편하게 대하다 보니 가까운 사람에게 오히려 서운함을 줄 수 있습니다. 사소한 표현 하나에도 진심을 담는 것이 좋습니다.</div>
+        </div>
+      </div>
+
+      <div class="detail-section" style="border-left-color: #db2777;">
+        <div class="detail-header"><h4>✨ 현재 기운 & 건강운 (얼굴빛·혈색)</h4></div>
+        <div class="shape-desc">📐 [형태 분석] 오악(이마, 코, 턱, 광대)의 윤곽이 조화로우며 맑은 기운 감지</div>
+        <div class="original-data">💡 [측정 결과] 현재 전체적인 얼굴의 기운과 혈색이 활력 넘치는 상태입니다. 추진하는 일마다 에너지가 원활하게 공급되며, 컨디션 유지만 잘한다면 원하는 성과를 쉽게 이룰 수 있습니다.</div>
+        <div class="analysis-grid">
+          <div class="good-box"><strong>🟢 활력 장점</strong>현재 운세의 흐름이 상생(相生)하는 길한 국면이므로 새로운 도전이나 계약, 중요한 결정을 내리기에 매우 좋은 시기입니다.</div>
+          <div class="bad-box"><strong>🔴 주의할 점</strong>에너지가 넘치는 만큼 과로나 무리한 일정으로 인해 체력이 한꺼번에 소모될 수 있으니 충분한 휴식과 수면을 챙기세요.</div>
         </div>
       </div>
     `;
 
     document.getElementById("desc-summary").innerText = 
-      `당신은 ${elementType.split('-')[0]}의 타고난 기운을 지녔습니다. 본인의 뛰어난 직관력을 믿고 나아가되, 타인에게 부드러운 미소와 경청의 태도를 한 스푼 더한다면 평생 큰 풍파 없이 길운(吉運)이 따를 것입니다.`;
+      `당신은 ${elementType.split('-')[0]}의 타고난 기운을 지녔으며, 연애운과 재물운의 흐름이 매우 왕성합니다. 본인의 뛰어난 직관력을 믿고 나아가되 타인을 향한 따뜻한 공감을 유지한다면 최고의 성취를 거둘 것입니다.`;
 
     resultCard.style.display = "block";
   }
@@ -786,9 +845,13 @@
     document.getElementById("ratio-container").style.display = "none";
     document.getElementById("res-element").innerText = "채청(採聽) - 정보 수용과 수명";
 
+    document.getElementById("score-love").innerText = `${Math.floor(Math.random() * 8 + 91)}점 ⭐`;
+    document.getElementById("score-wealth").innerText = `${Math.floor(Math.random() * 8 + 92)}점 💰`;
+    document.getElementById("score-career").innerText = `${Math.floor(Math.random() * 8 + 91)}점 🏆`;
+
     const detailsDiv = document.getElementById("details-container");
     detailsDiv.innerHTML = `
-      <div class="detail-section" style="border-left-color: #ec4899;">
+      <div class="detail-section" style="border-left-color: #db2777;">
         <div class="detail-header"><h4>👂 채청관(귀) - 지혜수용 & 평생의 복록</h4></div>
         <div class="shape-desc">📐 [형태 분석] 윤곽(귓바퀴)이 선명하고 귓불(수주)이 도톰하게 맺힌 상</div>
         <div class="original-data">💡 [측정 결과] 귀는 관상학에서 지혜와 수명, 외부 정보를 수용하는 태도를 의미합니다. 측면 각도상 귀의 상단이 눈높이와 조화를 이루고 있어, 타인의 조언을 경청할 줄 알고 평생 귀인의 조력이 따릅니다.</div>
@@ -797,7 +860,7 @@
           <div class="bad-box"><strong>🔴 보완할 점 (주의)</strong>타인의 말을 귀담아듣는 성향이 강하다 보니, 때로는 줏대 없이 이리저리 휘둘리거나 '귀가 얇다'는 평을 들을 위험이 있습니다. 쏟아지는 정보와 조언 속에서 진짜와 가짜를 구분해 내는 본인만의 확고한 기준점이 필요합니다.</div>
         </div>
       </div>
-      <div class="detail-section" style="border-left-color: #8b5cf6;">
+      <div class="detail-section" style="border-left-color: #7c3aed;">
         <div class="detail-header"><h4>🗿 측면 하악선(턱 골격) - 지구력 & 실천력</h4></div>
         <div class="shape-desc">📐 [형태 분석] 귀 밑에서 턱 끝으로 이어지는 골격이 암석처럼 견고한 형태</div>
         <div class="original-data">💡 [측정 결과] 하악 골격의 밀도가 단단하여 강인한 지구력과 투지를 보여줍니다. 목표를 세우면 중도에 포기하지 않고 끝까지 밀어붙이는 돌파력이 중년 이후의 엄청난 재물 성취를 뒷받침합니다.</div>
@@ -822,12 +885,12 @@
       if (lastAnalyzedLandmarks) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         faceapi.draw.drawFaceLandmarks(canvas, lastAnalyzedLandmarks, {
-          pointColor: { color: '#38bdf8', lineWidth: 1 },
-          boxColor: { color: '#facc15', lineWidth: 1 }
+          pointColor: { color: '#0284c7', lineWidth: 1 },
+          boxColor: { color: '#b45309', lineWidth: 1 }
         });
       }
 
-      const canvasResult = await html2canvas(captureContainer, { backgroundColor: '#0f172a', scale: 2, useCORS: true });
+      const canvasResult = await html2canvas(captureContainer, { backgroundColor: '#ffffff', scale: 2, useCORS: true });
       const imageURL = canvasResult.toDataURL('image/png');
       const link = document.createElement('a');
       link.href = imageURL; 
@@ -837,12 +900,11 @@
       document.body.removeChild(link);
 
       statusMsg.innerText = "✅ 기기 사진 앱/다운로드 폴더에 저장되었습니다!";
-      statusMsg.style.background = "#15803d";
+      statusMsg.style.background = "#dcfce7";
     } catch (e) {
       console.error(e);
       alert("이미지 저장 중 오류가 발생했습니다.");
     } finally {
-      // 🌟 [핵심 수정] 저장 완료 후 카메라 영역 블랙아웃 방지 및 원상 복구
       if (currentMode !== 'upload') {
         if (frozenSnapshotUrl) {
           imgPreview.src = frozenSnapshotUrl;
@@ -885,11 +947,11 @@
       ]);
       isModelLoaded = true;
       statusMsg.innerText = "💡 준비 완료! 사진을 선택하거나 스캔 버튼을 누르세요.";
-      statusMsg.style.background = "#334155";
+      statusMsg.style.background = "#f1f5f9";
       if (currentMode !== 'upload') startCamera();
     } catch (e) {
       statusMsg.innerText = "⚠️ 외부 AI 모델 연결 실패 (네트워크를 확인하세요)";
-      statusMsg.style.background = "#b91c1c";
+      statusMsg.style.background = "#fee2e2";
     }
   }
 
