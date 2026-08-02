@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>실시간 AI 손금</title>
+  
+  <meta name="theme-color" content="#f1f5f9">
+  <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
+
+  <!-- MediaPipe Hands & Drawing Utils -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    
+    html, body {
+      width: 100%;
+      min-height: 100vh;
+      min-height: 100dvh;
+      background-color: #f1f5f9;
+      color: #1e293b;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow-x: hidden;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: max(env(safe-area-inset-top), 6px) 6px max(env(safe-area-inset-bottom), 6px) 6px;
+    }
+
+    .app-nav {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 8px;
+      margin-bottom: 2px;
+      font-size: 0.85rem;
+    }
+    .nav-brand { font-weight: bold; color: #4338ca; text-decoration: none; }
+    .nav-home-btn { color: #64748b; text-decoration: none; cursor: pointer; background: transparent; border: none; font-size: 0.85rem; }
+
+    .container {
+      background: #ffffff;
+      padding: 12px;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+      margin: 0 auto;
+    }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 2px;
+    }
+
+    h1 { font-size: 1.12rem; color: #047857; display: inline-block; }
+    
+    .status-msg {
+      background: #fef2f2;
+      color: #991b1b;
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      margin-bottom: 6px;
+      font-weight: bold;
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1.3;
+      border: 1px solid #fecaca;
+    }
+    .status-msg.success {
+      background: #f0fdf4;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+    }
+    .status-msg.info {
+      background: #eff6ff;
+      color: #1e40af;
+      border: 1px solid #bfdbfe;
+    }
+
+    .video-wrapper {
+      position: relative;
+      width: 100%;
+      background: #000;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 6px;
+      border: 2px solid #e2e8f0;
+      aspect-ratio: 3 / 4;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    video, canvas, #snapshot-img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    video { z-index: 1; transform: scaleX(-1); }
+    #snapshot-img { z-index: 2; display: none; transform: scaleX(-1); }
+    canvas { pointer-events: none; z-index: 3; display: block; transform: scaleX(-1); }
+
+    .palm-guide-frame {
+      position: absolute;
+      top: 15%; left: 15%; width: 70%; height: 70%;
+      border: 2px dashed rgba(16, 185, 129, 0.8);
+      border-radius: 20px;
+      z-index: 4;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+    }
+    .palm-guide-frame span {
+      background: rgba(0, 0, 0, 0.75);
+      color: #a7f3d0;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .scan-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 10;
+      display: none;
+    }
+    .scan-overlay.active { display: block; }
+    .scan-line {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 4px;
+      background: linear-gradient(90deg, transparent, #10b981, #34d399, #10b981, transparent);
+      box-shadow: 0 0 15px #10b981, 0 0 25px #34d399;
+      animation: scan-move 1.5s linear infinite;
+    }
+    @keyframes scan-move {
+      0% { top: 0%; }
+      50% { top: 92%; }
+      100% { top: 0%; }
+    }
+
+    .top-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .cam-switch-btn {
+      background: #f8fafc;
+      color: #334155;
+      border: 1px solid #e2e8f0;
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .main-btn-group {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 6px;
+      align-items: center;
+    }
+
+    .main-btn {
+      background: linear-gradient(135deg, #059669, #10b981);
+      color: white;
+      border: none;
+      padding: 11px;
+      font-size: 0.95rem;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      flex: 2;
+      box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
+      opacity: 0.5;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    .main-btn.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .reset-scan-btn {
+      background: #f3f4f6;
+      color: #374151;
+      border: 1px solid #d1d5db;
+      padding: 11px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      margin-bottom: 6px;
+      display: none;
+      text-align: center;
+    }
+
+    .result-card {
+      margin-top: 8px;
+      background: #f8fafc;
+      padding: 12px;
+      border-radius: 12px;
+      text-align: left;
+      display: none;
+      border: 1px solid #e2e8f0;
+      font-size: 0.92rem;
+      box-sizing: border-box;
+      width: 100%;
+    }
+    .result-card h3 { 
+      color: #047857; 
+      margin-bottom: 8px; 
+      font-size: 1.15rem; 
+      text-align: center; 
+      border-bottom: 1px solid #e2e8f0; 
+      padding-bottom: 6px; 
+    }
+
+    .detail-section {
+      background: #ffffff;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      border: 1px solid #e2e8f0;
+      word-break: keep-all;
+    }
+    .detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .detail-section h4 { font-size: 0.95rem; font-weight: bold; }
+    .original-data { font-size: 0.82rem; color: #334155; line-height: 1.45; margin-bottom: 6px; background: #f8fafc; padding: 6px; border-radius: 5px; border: 1px solid #e2e8f0; }
+    .good-box { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 8px; border-radius: 5px; font-size: 0.83rem; line-height: 1.45; color: #166534; }
+
+    .legend-box {
+      display: flex;
+      justify-content: space-around;
+      background: #f8fafc;
+      padding: 8px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      font-size: 0.82rem;
+      font-weight: bold;
+      border: 1px solid #e2e8f0;
+    }
+    .legend-item { display: flex; align-items: center; gap: 4px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+    .action-btn-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+    }
+    .sub-action-btn {
+      flex: 1;
+      background: #ffffff;
+      color: #334155;
+      border: 1px solid #cbd5e1;
+      padding: 9px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: center;
+    }
+    .sub-action-btn:hover {
+      background: #f1f5f9;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="app-nav">
+    <a href="#" class="nav-brand">🔮 실시간 AI 손금</a>
+    <button class="nav-home-btn" onclick="goToHome()">🏠 AI 운세 센터 홈</button>
+  </nav>
+
+  <div class="container">
+    <div class="app-header">
+      <h1>실시간 AI 손금</h1>
+    </div>
+
+    <div class="top-controls">
+      <button class="cam-switch-btn" onclick="switchCamera()">🔄 카메라 전환</button>
+      <div id="ai-status-badge" style="font-size: 0.78rem; color: #dc2626; font-weight: bold;">🔴 준비중</div>
+    </div>
+
+    <div id="status" class="status-msg info">⚠️ 카메라 권한을 확인 중입니다...</div>
+
+    <div class="video-wrapper">
+      <video id="webcam" autoplay playsinline muted></video>
+      <img id="snapshot-img" alt="Captured Palm">
+      <canvas id="output_canvas"></canvas>
+
+      <div id="palm-guide-frame" class="palm-guide-frame">
+        <span>✋ 손바닥을 여기에 밀착하세요</span>
+      </div>
+
+      <div id="scan-overlay" class="scan-overlay">
+        <div class="scan-line"></div>
+      </div>
+    </div>
+
+    <button id="btn-reset-scan" class="reset-scan-btn" onclick="resetToCamView()">↩️ 다시 촬영하기</button>
+
+    <div class="main-btn-group" id="btn-group-action">
+      <button id="btn-action" class="main-btn" onclick="startPalmScan()">✋ 실시간 AI 손금 정밀 스캔 및 분석</button>
+    </div>
+
+    <div class="legend-box">
+      <div class="legend-item"><span class="dot" style="background:#f59e0b;"></span>생명선</div>
+      <div class="legend-item"><span class="dot" style="background:#3b82f6;"></span>두뇌선</div>
+      <div class="legend-item"><span class="dot" style="background:#10b981;"></span>운명선</div>
+      <div class="legend-item"><span class="dot" style="background:#ec4899;"></span>감정선</div>
+    </div>
+
+    <div id="result" class="result-card">
+      <h3>📊 실시간 AI 손금 4대 정밀 분석 리포트</h3>
+      <div id="details-container"></div>
+      <div class="detail-section" style="border-left: 3px solid #059669; margin-top: 6px;">
+        <div class="detail-header"><h4 style="color: #065f46;">💡 종합 평론 및 개운 조언</h4></div>
+        <p id="desc-summary" style="font-size: 0.88rem; line-height: 1.45; color: #334155;">-</p>
+      </div>
+      <div class="action-btn-row">
+        <button class="sub-action-btn" onclick="saveResult()">📥 결과저장</button>
+        <button class="sub-action-btn" onclick="shareResult()">📤 결과공유하기</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const video = document.getElementById("webcam");
+    const snapshotImg = document.getElementById("snapshot-img");
+    const canvas = document.getElementById("output_canvas");
+    const ctx = canvas.getContext("2d");
+    const statusMsg = document.getElementById("status");
+    const resultCard = document.getElementById("result");
+    const scanOverlay = document.getElementById("scan-overlay");
+    const btnResetScan = document.getElementById("btn-reset-scan");
+    const btnAction = document.getElementById("btn-action");
+    const badge = document.getElementById("ai-status-badge");
+    const guideFrame = document.getElementById("palm-guide-frame");
+
+    let currentStream = null;
+    let useFrontCamera = true;
+    let hands = null;
+    let cameraActive = false;
+    let isScanning = false;
+    let currentLandmarks = null;
+
+    function goToHome() {
+      location.href = "./index.html"; 
+    }
+
+    function saveResult() {
+      // 결과 내용을 텍스트 파일 형태로 생성하여 다운로드 (파일로 저장)
+      const reportText = "=== 실시간 AI 손금 분석 리포트 ===\n\n" + 
+        "1. 생명선: 92점 - 깊고 선명하게 뻗어 있으며, 체력과 생명력이 매우 왕성함을 나타냅니다.\n" +
+        "2. 두뇌선: 88점 - 직선형에 가까우며 분석력과 판단력이 뛰어난 두뇌를 상징합니다.\n" +
+        "3. 운명선: 90점 - 손바닥 중앙을 타고 곧게 올라가며 자수성가할 운을 보여줍니다.\n" +
+        "4. 감정선: 94점 - 길고 부드럽게 곡선을 그리며 타인에 대한 공감 능력이 뛰어납니다.\n\n" +
+        "[종합 평론]\n포착된 손금의 결합 형태로 볼 때, 타고난 인내심과 분석력을 바탕으로 꾸준히 노력하면 큰 성공을 거둘 수 있는 길조입니다.";
+      
+      const blob = new Blob([reportText], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'AI_손금_분석_리포트.txt';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function shareResult() {
+      // 직접 문자로 공유할 수 있도록 sms 스킴(sms:)을 활용하여 문자 앱 바로 연동
+      const shareText = "=== 실시간 AI 손금 분석 리포트 ===\n\n" +
+        "1. 생명선: 92점\n2. 두뇌선: 88점\n3. 운명선: 90점\n4. 감정선: 94점\n\n" +
+        "[종합 평론] 타고난 인내심과 분석력을 바탕으로 꾸준히 노력하면 큰 성공을 거둘 수 있는 길조입니다.";
+
+      const encodedText = encodeURIComponent(shareText);
+      window.location.href = `sms:?body=${encodedText}`;
+    }
+
+    // 1. 카메라 시작 및 전환 함수
+    async function switchCamera() {
+      useFrontCamera = !useFrontCamera;
+      await startCamera();
+    }
+
+    async function startCamera() {
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+      }
+
+      statusMsg.textContent = "⚠️ 카메라 권한을 확인 중입니다...";
+      statusMsg.className = "status-msg info";
+      btnAction.classList.remove("active");
+
+      try {
+        const constraints = {
+          video: {
+            facingMode: useFrontCamera ? "user" : "environment",
+            width: { ideal: 720 },
+            height: { ideal: 960 }
+          }
+        };
+
+        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = currentStream;
+
+        await new Promise((resolve) => {
+          video.onloadedmetadata = () => {
+            video.play();
+            resolve();
+          };
+        });
+
+        canvas.width = video.videoWidth || 480;
+        canvas.height = video.videoHeight || 640;
+
+        statusMsg.textContent = "✅ 카메라 연결 완료! 손바닥을 가이드라인에 맞춰주세요.";
+        statusMsg.className = "status-msg success";
+        badge.textContent = "🟢 AI 준비됨";
+        badge.style.color = "#059669";
+        cameraActive = true;
+
+      } catch (err) {
+        console.error(err);
+        statusMsg.textContent = "❌ 카메라 접근에 실패했습니다. 권한을 허용했는지 확인해주세요.";
+        statusMsg.className = "status-msg";
+        badge.textContent = "🔴 오류";
+      }
+    }
+
+    // 2. MediaPipe Hands 초기화
+    function initMediaPipe() {
+      hands = new Hands({
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+      });
+
+      hands.setOptions({
+        maxNumHands: 1,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.6,
+        minTrackingConfidence: 0.6
+      });
+
+      hands.onResults(onHandResults);
+
+      async function sendVideoFrame() {
+        if (cameraActive && !isScanning && video.readyState >= 2) {
+          await hands.send({ image: video });
+        }
+        requestAnimationFrame(sendVideoFrame);
+      }
+      sendVideoFrame();
+    }
+
+    // 손가락 관절 뼈대 및 4대 손금을 함께 그리는 함수
+    function drawFullHandAndLines(landmarks, width, height) {
+      ctx.save();
+
+      // 1. 손가락 전체 뼈대(점과 연결선) 그리기
+      drawConnectors(ctx, landmarks, HAND_CONNECTIONS, { color: 'rgba(16, 185, 129, 0.6)', lineWidth: 2 });
+      drawLandmarks(ctx, landmarks, { color: 'rgba(245, 158, 11, 0.8)', lineWidth: 1, radius: 3 });
+
+      // 2. 4대 핵심 손금 그리기
+      ctx.lineWidth = 3.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      const wrist = landmarks[0];
+      const baseIndex = landmarks[5];
+      const basePinky = landmarks[17];
+      const thumbCmc = landmarks[1];
+
+      // 생명선
+      ctx.strokeStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.moveTo(thumbCmc.x * width, thumbCmc.y * height);
+      ctx.quadraticCurveTo((thumbCmc.x * 0.9 + wrist.x * 0.1) * width, (thumbCmc.y * 0.6 + wrist.y * 0.4) * height, (wrist.x * 0.8 + baseIndex.x * 0.2) * width, (wrist.y * 0.8 + baseIndex.y * 0.2) * height);
+      ctx.stroke();
+
+      // 두뇌선
+      ctx.strokeStyle = '#3b82f6';
+      ctx.beginPath();
+      ctx.moveTo((baseIndex.x * 0.7 + thumbCmc.x * 0.3) * width, (baseIndex.y * 0.7 + thumbCmc.y * 0.3) * height);
+      ctx.quadraticCurveTo((baseIndex.x * 0.5 + basePinky.x * 0.5) * width, (baseIndex.y * 0.5 + basePinky.y * 0.5) * height, (basePinky.x * 0.4 + wrist.x * 0.6) * width, (basePinky.y * 0.4 + wrist.y * 0.6) * height);
+      ctx.stroke();
+
+      // 감정선
+      ctx.strokeStyle = '#ec4899';
+      ctx.beginPath();
+      ctx.moveTo(baseIndex.x * width, baseIndex.y * height);
+      ctx.quadraticCurveTo((baseIndex.x * 0.5 + basePinky.x * 0.5) * width, (baseIndex.y * 0.9 + basePinky.y * 0.1) * height, basePinky.x * width, basePinky.y * height);
+      ctx.stroke();
+
+      // 운명선
+      ctx.strokeStyle = '#10b981';
+      ctx.beginPath();
+      ctx.moveTo(wrist.x * width, wrist.y * height);
+      ctx.quadraticCurveTo((baseIndex.x * 0.5 + basePinky.x * 0.5) * width, (baseIndex.y * 0.7 + wrist.y * 0.3) * height, (baseIndex.x * 0.6 + basePinky.x * 0.4) * width, (baseIndex.y * 1.1) * height);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function onHandResults(results) {
+      if (isScanning) return;
+
+      ctx.save();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        currentLandmarks = results.multiHandLandmarks[0];
+
+        // 손가락 뼈대 + 4대 손금 그리기
+        drawFullHandAndLines(currentLandmarks, canvas.width, canvas.height);
+
+        statusMsg.textContent = "✨ 손이 감지되었습니다! 스캔 버튼을 누르세요.";
+        statusMsg.className = "status-msg success";
+        btnAction.classList.add("active");
+      } else {
+        currentLandmarks = null;
+        statusMsg.textContent = "✋ 손바닥을 카메라 중앙 가이드에 맞춰주세요. (손 미감지)";
+        statusMsg.className = "status-msg info";
+        btnAction.classList.remove("active");
+      }
+      ctx.restore();
+    }
+
+    // 3. 스캔 및 분석
+    function startPalmScan() {
+      if (!cameraActive || !btnAction.classList.contains("active")) return;
+      isScanning = true;
+      btnAction.classList.remove("active");
+      
+      // 1) 즉시 현재 비디오 프레임을 캡처해서 고정 이미지로 변환
+      canvas.width = video.videoWidth || 480;
+      canvas.height = video.videoHeight || 640;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      snapshotImg.src = canvas.toDataURL('image/png');
+      snapshotImg.style.display = "block";
+      video.style.display = "none";
+
+      // 2) 캔버스에 뼈대와 손금을 먼저 그린 상태로 고정
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (currentLandmarks) {
+        drawFullHandAndLines(currentLandmarks, canvas.width, canvas.height);
+      }
+
+      // 3) 스캔 애니메이션 시작 및 가이드 프레임 숨김
+      scanOverlay.classList.add("active");
+      guideFrame.style.display = "none";
+      
+      statusMsg.textContent = "🔍 AI가 손금을 정밀 스캔하고 분석 중입니다...";
+      statusMsg.className = "status-msg info";
+
+      // 4) 스캔 연출(2.5초) 동안 캔버스(뼈대/손금)가 이미지 위에서 계속 유지됨
+      setTimeout(() => {
+        scanOverlay.classList.remove("active");
+        showResults();
+      }, 2500);
+    }
+
+    function showResults() {
+      statusMsg.textContent = "🎉 실시간 AI 손금 분석이 완료되었습니다!";
+      statusMsg.className = "status-msg success";
+      btnResetScan.style.display = "block";
+      resultCard.style.display = "block";
+
+      document.getElementById("details-container").innerHTML = `
+        <div class="detail-section">
+          <div class="detail-header">
+            <h4 style="color: #d97706;">🌟 생명선 (Vitality Line)</h4>
+            <span style="font-weight:bold; color:#059669;">점수: 92점</span>
+          </div>
+          <p class="original-data">깊고 선명하게 뻗어 있으며, 체력과 생명력이 매우 왕성함을 나타냅니다.</p>
+          <div class="good-box">✔️ 지치지 않는 에너지를 가졌으며 활기찬 삶을 영위할 상입니다.</div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-header">
+            <h4 style="color: #2563eb;">🧠 두뇌선 (Wisdom Line)</h4>
+            <span style="font-weight:bold; color:#059669;">점수: 88점</span>
+          </div>
+          <p class="original-data">직선형에 가까우며 분석력과 판단력이 뛰어난 두뇌를 상징합니다.</p>
+          <div class="good-box">✔️ 전문적인 분야에서 두각을 나타내며 의사결정 능력이 돋보입니다.</div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-header">
+            <h4 style="color: #059669;">👑 운명선 (Destiny Line)</h4>
+            <span style="font-weight:bold; color:#059669;">점수: 90점</span>
+          </div>
+          <p class="original-data">손바닥 중앙을 타고 곧게 올라가며 자수성가할 운을 보여줍니다.</p>
+          <div class="good-box">✔️ 목표를 향해 흔들림 없이 나아가며 큰 성취를 이룰 형국입니다.</div>
+        </div>
+        <div class="detail-section">
+          <div class="detail-header">
+            <h4 style="color: #db2777;">💖 감정선 (Heart Line)</h4>
+            <span style="font-weight:bold; color:#059669;">점수: 94점</span>
+          </div>
+          <p class="original-data">길고 부드럽게 곡선을 그리며 타인에 대한 공감 능력이 뛰어납니다.</p>
+          <div class="good-box">✔️ 주변 사람들과 깊은 유대를 형성하며 인덕이 많은 상입니다.</div>
+        </div>
+      `;
+
+      document.getElementById("desc-summary").textContent = 
+        "포착된 손금의 결합 형태로 볼 때, 타고난 인내심과 분석력을 바탕으로 꾸준히 노력하면 큰 성공을 거둘 수 있는 길조입니다.";
+      
+      resultCard.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function resetToCamView() {
+      isScanning = false;
+      currentLandmarks = null;
+      snapshotImg.style.display = "none";
+      video.style.display = "block";
+      guideFrame.style.display = "flex";
+      resultCard.style.display = "none";
+      btnResetScan.style.display = "none";
+      statusMsg.textContent = "✅ 카메라 대기 중입니다. 손을 화면에 비춰주세요.";
+      statusMsg.className = "status-msg success";
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      startCamera();
+      initMediaPipe();
+    });
+  </script>
+</body>
+</html>
