@@ -381,7 +381,6 @@
     }
 
     function saveResult() {
-      // 결과 내용을 텍스트 파일 형태로 생성하여 다운로드 (파일로 저장)
       const reportText = "=== 실시간 AI 손금 분석 리포트 ===\n\n" + 
         "1. 생명선: 92점 - 깊고 선명하게 뻗어 있으며, 체력과 생명력이 매우 왕성함을 나타냅니다.\n" +
         "2. 두뇌선: 88점 - 직선형에 가까우며 분석력과 판단력이 뛰어난 두뇌를 상징합니다.\n" +
@@ -401,13 +400,19 @@
     }
 
     function shareResult() {
-      // 직접 문자로 공유할 수 있도록 sms 스킴(sms:)을 활용하여 문자 앱 바로 연동
       const shareText = "=== 실시간 AI 손금 분석 리포트 ===\n\n" +
         "1. 생명선: 92점\n2. 두뇌선: 88점\n3. 운명선: 90점\n4. 감정선: 94점\n\n" +
         "[종합 평론] 타고난 인내심과 분석력을 바탕으로 꾸준히 노력하면 큰 성공을 거둘 수 있는 길조입니다.";
 
-      const encodedText = encodeURIComponent(shareText);
-      window.location.href = `sms:?body=${encodedText}`;
+      if (navigator.share) {
+        navigator.share({
+          title: '실시간 AI 손금 분석 리포트',
+          text: shareText
+        }).catch((err) => console.log("Sharing failed", err));
+      } else {
+        const encodedText = encodeURIComponent(shareText);
+        window.location.href = `sms:?body=${encodedText}`;
+      }
     }
 
     // 1. 카메라 시작 및 전환 함수
